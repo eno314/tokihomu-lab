@@ -9,7 +9,7 @@ const LEVELS = [
     id: 1,
     name: 'レベル 1',
     title: 'はじめての プログラミング',
-    description: 'まっすぐ すすんで ホムラとおさかなを めざそう！',
+    description: 'まっすぐ すすんで ホムラをつかまえよう！（おにごっこ）',
     gridSize: 5,
     startX: 0,
     startY: 0,
@@ -24,7 +24,7 @@ const LEVELS = [
     id: 2,
     name: 'レベル 2',
     title: 'ダンボールを よけよう！',
-    description: 'みちに ダンボールが あるよ！ まわって ゴールを めざそう！',
+    description: 'みちに ダンボールが あるよ！ まわって ホムラをつかまえよう！',
     gridSize: 5,
     startX: 0,
     startY: 0,
@@ -39,13 +39,13 @@ const LEVELS = [
       { x: 2, y: 2 },
       { x: 3, y: 3 }
     ],
-    startMessage: 'ダンボールに ぶつからないように まわりみちをして ゴールをめざそう！'
+    startMessage: 'ダンボールに ぶつからないように まわりみちをして ホムラをつかまえよう！'
   },
   {
     id: 3,
     name: 'レベル 3',
-    title: 'うごくホムラをおいかけよう！',
-    description: 'ホムラが てくてく おさんぽしているよ！ トキが めいれいを 1つ じっこうするたびに うごくよ！',
+    title: 'にげるホムラをつかまえよう！',
+    description: 'ホムラが てくてく にげているよ！ トキが めいれいを 1つ じっこうするたびに うごくよ！',
     gridSize: 5,
     startX: 0,
     startY: 0,
@@ -56,13 +56,13 @@ const LEVELS = [
     movingGoal: true,
     homuraInitialDir: -1, // -1: 左, 1: 右
     obstacles: [],
-    startMessage: 'ホムラが トキのめいれい（すすむ・むく）ごとに うごくよ！ 左端についたら右へ、右端についたら左へおりかえすよ！'
+    startMessage: 'ホムラが トキのめいれい（すすむ・むく）ごとに にげるよ！ 左端についたら右へ、右端についたら左へおりかえすよ！'
   },
   {
     id: 4,
     name: 'レベル 4',
-    title: 'ダンボールと おさんぽホムラ',
-    description: 'ダンボールを よけながら、おさんぽしている ホムラを おいかけよう！',
+    title: 'ダンボールと おにごっこ',
+    description: 'ダンボールを よけながら、にげる ホムラを つかまえよう！',
     gridSize: 5,
     startX: 0,
     startY: 0,
@@ -79,7 +79,7 @@ const LEVELS = [
       { x: 2, y: 2 },
       { x: 3, y: 3 }
     ],
-    startMessage: 'ダンボールに ぶつからないように まわりみちをしながら、うごくホムラを おいかけよう！'
+    startMessage: 'ダンボールに ぶつからないように まわりみちをしながら、にげるホムラを つかまえよう！'
   }
 ];
 
@@ -481,7 +481,7 @@ function createGridBoard() {
 }
 
 /**
- * ゴール（ホムラとおさかな）の盤面表示更新
+ * ゴール（ホムラ）の盤面表示更新
  */
 function updateGoalDisplay() {
   // 全セルからゴール表示をクリア
@@ -515,7 +515,6 @@ function updateGoalDisplay() {
       <div class="homura-avatar" style="${flipStyle}">
         ${HOMURA_SVG}
       </div>
-      <span class="fish-item">🐟</span>
     `;
     targetCell.appendChild(goalItems);
   }
@@ -777,7 +776,7 @@ async function runProgram() {
  */
 function onGoalReached() {
   setTokiMood('happy');
-  setMessage('やったー！ ホムラとおさかなに 会えたよ！ おめでとう！ 🎉', 'happy');
+  setMessage('やったー！ ホムラをつかまえたよ！タッチ！ おめでとう！ 🎉', 'happy');
   elements.toki.classList.add('victory-jump');
 
   if (elements.modalCatsContainer) {

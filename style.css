@@ -432,14 +432,13 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 2px;
   animation: float 2.2s infinite ease-in-out;
-  padding-top: 8px;
+  padding-top: 4px;
 }
 
 .homura-avatar {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -451,13 +450,6 @@ body {
   width: 100%;
   height: 100%;
   display: block;
-}
-
-.fish-item {
-  font-size: 1.15rem;
-  line-height: 1;
-  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2));
-  transform: rotate(-10deg);
 }
 
 /* 障害物（ダンボール箱）セル */
