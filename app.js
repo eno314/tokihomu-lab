@@ -35,10 +35,9 @@ const LEVELS = [
     obstacles: [
       { x: 0, y: 1 },
       { x: 1, y: 3 },
-      { x: 1, y: 3 },
       { x: 2, y: 0 },
       { x: 2, y: 2 },
-      { x: 4, y: 3 }
+      { x: 3, y: 3 }
     ],
     startMessage: 'ダンボールに ぶつからないように まわりみちをして ゴールをめざそう！'
   },
@@ -58,6 +57,29 @@ const LEVELS = [
     homuraInitialDir: -1, // -1: 左, 1: 右
     obstacles: [],
     startMessage: 'ホムラが トキのめいれい（すすむ・むく）ごとに うごくよ！ 左端についたら右へ、右端についたら左へおりかえすよ！'
+  },
+  {
+    id: 4,
+    name: 'レベル 4',
+    title: 'ダンボールと おさんぽホムラ',
+    description: 'ダンボールを よけながら、おさんぽしている ホムラを おいかけよう！',
+    gridSize: 5,
+    startX: 0,
+    startY: 0,
+    startDirection: 1,
+    startRotation: 90,
+    goalX: 4,
+    goalY: 4,
+    movingGoal: true,
+    homuraInitialDir: -1, // -1: 左, 1: 右
+    obstacles: [
+      { x: 0, y: 1 },
+      { x: 1, y: 3 },
+      { x: 2, y: 0 },
+      { x: 2, y: 2 },
+      { x: 3, y: 3 }
+    ],
+    startMessage: 'ダンボールに ぶつからないように まわりみちをしながら、うごくホムラを おいかけよう！'
   }
 ];
 
