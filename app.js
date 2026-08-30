@@ -18,7 +18,8 @@ const LEVELS = [
     goalX: 4,
     goalY: 4,
     obstacles: [],
-    startMessage: '「うごかす！」ボタンをおすと、トキがうごきだすよ！'
+    startMessage: '「うごかす！」ボタンをおすと、トキがうごきだすよ！',
+    minBlocks: 5
   },
   {
     id: 2,
@@ -39,7 +40,8 @@ const LEVELS = [
       { x: 2, y: 2 },
       { x: 3, y: 3 }
     ],
-    startMessage: 'ダンボールに ぶつからないように まわりみちをして ホムラをつかまえよう！'
+    startMessage: 'ダンボールに ぶつからないように まわりみちをして ホムラをつかまえよう！',
+    minBlocks: 8
   },
   {
     id: 3,
@@ -56,7 +58,8 @@ const LEVELS = [
     movingGoal: true,
     homuraInitialDir: -1, // -1: 左, 1: 右
     obstacles: [],
-    startMessage: 'ホムラが トキのめいれい（すすむ・むく）ごとに にげるよ！ 左端についたら右へ、右端についたら左へおりかえすよ！'
+    startMessage: 'ホムラが トキのめいれい（すすむ・むく）ごとに にげるよ！ 左端についたら右へ、右端についたら左へおりかえすよ！',
+    minBlocks: 3
   },
   {
     id: 4,
@@ -79,7 +82,8 @@ const LEVELS = [
       { x: 2, y: 2 },
       { x: 3, y: 3 }
     ],
-    startMessage: 'ダンボールに ぶつからないように まわりみちをしながら、にげるホムラを つかまえよう！'
+    startMessage: 'ダンボールに ぶつからないように まわりみちをしながら、にげるホムラを つかまえよう！',
+    minBlocks: 11
   }
 ];
 
@@ -289,6 +293,9 @@ const elements = {
   statusMessage: document.getElementById('status-message'),
   speakerAvatar: document.querySelector('.speaker-avatar'),
   victoryModal: document.getElementById('victory-modal'),
+  victoryTitle: document.getElementById('victory-title'),
+  victoryDesc: document.getElementById('victory-desc'),
+  victoryEvaluation: document.getElementById('victory-evaluation'),
   modalCatsContainer: document.getElementById('modal-cats-container'),
   modalNextBtn: document.getElementById('modal-next-btn'),
   modalCloseBtn: document.getElementById('modal-close-btn'),
@@ -641,6 +648,35 @@ function getCommandsFromWorkspace() {
 }
 
 /**
+ * 実行されたプログラム（最上位ブロックスレッド）のブロック総数をカウント
+ */
+function countProgramBlocks() {
+  if (!workspace) return 0;
+
+  const topBlocks = workspace.getTopBlocks(true);
+  if (topBlocks.length === 0) return 0;
+
+  let count = 0;
+
+  function traverse(block) {
+    let current = block;
+    while (current) {
+      count++;
+      if (typeof current.getInputTargetBlock === 'function') {
+        const branchBlock = current.getInputTargetBlock('DO');
+        if (branchBlock) {
+          traverse(branchBlock);
+        }
+      }
+      current = current.getNextBlock();
+    }
+  }
+
+  traverse(topBlocks[0]);
+  return count;
+}
+
+/**
  * 指定ミリ秒スリープ
  */
 function sleep(ms) {
@@ -783,9 +819,22 @@ async function runProgram() {
  */
 function onGoalReached() {
   setTokiMood('happy');
-  setMessage('やったー！ ホムラをつかまえたよ！タッチ！ おめでとう！ 🎉', 'happy');
   elements.toki.classList.add('victory-jump');
 
+  // 作成したプログラムのブロック数を取得・判定
+  const currentLevelData = LEVELS.find(l => l.id === GameState.currentLevel);
+  const minBlocks = currentLevelData ? currentLevelData.minBlocks : 0;
+  const usedBlocks = countProgramBlocks();
+  const isPerfect = minBlocks > 0 && usedBlocks <= minBlocks;
+
+  // 吹き出しメッセージの更新
+  if (isPerfect) {
+    setMessage(`やったー！これ以上短くできない完璧なプログラムだよ！すごい！おめでとう！💮✨ (使ったブロック: ${usedBlocks}個)`, 'happy');
+  } else {
+    setMessage(`ホムラをつかまえたよ！🎉 くりかえし等をつかうと、もっと短くできるよ！ちょうせんしてみてね！💡 (いまのブロック: ${usedBlocks}個)`, 'happy');
+  }
+
+  // モーダル内の猫アイコン表示
   if (elements.modalCatsContainer) {
     elements.modalCatsContainer.innerHTML = `
       <div class="modal-cat-box">
@@ -798,6 +847,36 @@ function onGoalReached() {
         <span class="modal-cat-name">ホムラ (クリーム長毛)</span>
       </div>
     `;
+  }
+
+  // モーダル内のメッセージ・評価の更新
+  if (elements.victoryTitle) {
+    elements.victoryTitle.textContent = isPerfect
+      ? '🌟 かんぺき！ 大せいこう！ 🌟'
+      : '🎉 タッチ！ つかまえたよ！ 🎉';
+  }
+  if (elements.victoryDesc) {
+    elements.victoryDesc.innerHTML = isPerfect
+      ? 'ホムラをつかまえたよ！にゃーん！🎉<br><strong>これ以上 短くできない 完璧なプログラムです！</strong>'
+      : 'ホムラをつかまえたよ！にゃーん！🎉<br>おにごっこ せいこう！';
+  }
+  if (elements.victoryEvaluation) {
+    if (isPerfect) {
+      elements.victoryEvaluation.className = 'victory-evaluation eval-perfect';
+      elements.victoryEvaluation.innerHTML = `
+        <div class="eval-badge">💮 かんぺき！ これ以上短くできないよ！</div>
+        <div class="eval-detail">つかったブロック：<strong>${usedBlocks}こ</strong><br>むだのない、さいこうのプログラムだよ！すばらしい！✨</div>
+      `;
+    } else {
+      elements.victoryEvaluation.className = 'victory-evaluation eval-can-improve';
+      elements.victoryEvaluation.innerHTML = `
+        <div class="eval-badge">💡 もっと短くできるよ！</div>
+        <div class="eval-detail">
+          つかったブロック：<strong>${usedBlocks}こ</strong><br>
+          「くりかえし」ブロックなどを使うと、もっとすくないブロック数でクリアできるよ！<br>さらにみじかいプログラムに ちょうせんしてみてね！🐾
+        </div>
+      `;
+    }
   }
 
   // 次のレベルの存在確認
