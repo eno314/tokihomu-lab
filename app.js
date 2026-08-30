@@ -651,7 +651,7 @@ function sleep(ms) {
  * 4. コマンド実行エンジン
  */
 async function runProgram() {
-  if (GameState.isRunning) return;
+  if (GameState.isRunning || elements.runBtn.disabled) return;
 
   const commands = getCommandsFromWorkspace();
   if (commands.length === 0) {
@@ -668,6 +668,7 @@ async function runProgram() {
   setMessage('出発進行！にゃ〜ん！🐾', 'toki');
 
   const getStepDelay = () => parseInt(elements.speedSelect.value, 10) || 450;
+  let isSuccess = false;
 
   for (let i = 0; i < commands.length; i++) {
     if (GameState.shouldStop) break;
@@ -696,7 +697,7 @@ async function runProgram() {
       if (nextX < 0 || nextX >= GameState.GRID_SIZE || nextY < 0 || nextY >= GameState.GRID_SIZE) {
         // 壁に衝突！
         setTokiMood('sad');
-        setMessage('いたいっ！ かべに ぶつかっちゃった！(＞＜) むきを かえてみよう！', 'sad');
+        setMessage('いたいっ！ かべに ぶつかっちゃった！(＞＜) 「リセット」をおして やりなおしてね！', 'sad');
         elements.toki.classList.add('shake-animation');
         await sleep(getStepDelay() + 200);
         elements.toki.classList.remove('shake-animation');
@@ -704,7 +705,7 @@ async function runProgram() {
       } else if (GameState.obstacles.some(obs => obs.x === nextX && obs.y === nextY)) {
         // 障害物（ダンボール）に衝突！
         setTokiMood('sad');
-        setMessage('あぶない！ ダンボールに ぶつかっちゃった！(＞＜) むきを かえてみよう！', 'sad');
+        setMessage('あぶない！ ダンボールに ぶつかっちゃった！(＞＜) 「リセット」をおして やりなおしてね！', 'sad');
         elements.toki.classList.add('shake-animation');
         await sleep(getStepDelay() + 200);
         elements.toki.classList.remove('shake-animation');
@@ -718,6 +719,7 @@ async function runProgram() {
 
         // トキが移動したマスにホムラが居たか判定
         if (GameState.x === GameState.homuraX && GameState.y === GameState.homuraY) {
+          isSuccess = true;
           onGoalReached();
           break;
         }
@@ -740,15 +742,16 @@ async function runProgram() {
       actionExecuted = true;
     }
 
-    // トキが命令（進む・向く）を実行するたびに動くゴールの処理（レベル3）
+    // トキが命令（進む・向く）を実行するたびに動くゴールの処理（レベル3・4）
     if (actionExecuted && GameState.movingGoal) {
       await sleep(Math.min(250, Math.floor(getStepDelay() / 2)));
       if (GameState.shouldStop) break;
       moveHomura();
-      setMessage(`ホムラも てくてく うごいたよ！ (ホムラの ばしょ: ${GameState.homuraX}, ${GameState.homuraY})`, 'homura');
+      setMessage(`ホムラも てくてく にげたよ！ (ホムラの ばしょ: ${GameState.homuraX}, ${GameState.homuraY})`, 'homura');
 
       // ホムラがトキのいるマスに移動してきたか判定
       if (GameState.x === GameState.homuraX && GameState.y === GameState.homuraY) {
+        isSuccess = true;
         onGoalReached();
         break;
       }
@@ -763,12 +766,16 @@ async function runProgram() {
   }
 
   // 終了時のメッセージ（ゴール未到達時）
-  if (GameState.isRunning && !(GameState.x === GameState.homuraX && GameState.y === GameState.homuraY)) {
-    setMessage('プログラムのおわりまで うごいたよ！ ゴールまで あとすこし！', 'toki');
+  if (!isSuccess && !GameState.shouldStop) {
+    setTokiMood('sad');
+    setMessage('ホムラをつかまえられなかったよ…！(＞＜) 「リセット」をおして やりなおしてね！', 'sad');
   }
 
+  // リセットによって中断されたのでなければ、失敗時・ゴール達成時はリセットされるまで「うごかす」ボタンを無効化
+  if (!GameState.shouldStop) {
+    elements.runBtn.disabled = true;
+  }
   GameState.isRunning = false;
-  elements.runBtn.disabled = false;
 }
 
 /**
