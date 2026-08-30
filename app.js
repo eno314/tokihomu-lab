@@ -3,13 +3,54 @@
  * 子供向けプログラミング学習ゲーム コアスクリプト
  */
 
+// レベルデータ定義
+const LEVELS = [
+  {
+    id: 1,
+    name: 'レベル 1',
+    title: 'はじめての プログラミング',
+    description: 'まっすぐ すすんで ホムラとおさかなを めざそう！',
+    gridSize: 5,
+    startX: 0,
+    startY: 0,
+    startDirection: 1, // 0:上, 1:右, 2:下, 3:左
+    startRotation: 90,
+    goalX: 4,
+    goalY: 4,
+    obstacles: [],
+    startMessage: '「うごかす！」ボタンをおすと、トキがうごきだすよ！'
+  },
+  {
+    id: 2,
+    name: 'レベル 2',
+    title: 'ダンボールを よけよう！',
+    description: 'みちに ダンボールが あるよ！ まわって ゴールを めざそう！',
+    gridSize: 5,
+    startX: 0,
+    startY: 0,
+    startDirection: 1,
+    startRotation: 90,
+    goalX: 4,
+    goalY: 4,
+    obstacles: [
+      { x: 2, y: 0 },
+      { x: 2, y: 1 },
+      { x: 1, y: 3 },
+      { x: 2, y: 3 }
+    ],
+    startMessage: 'ダンボールに ぶつからないように まわりみちをして ゴールをめざそう！'
+  }
+];
+
 // ゲーム状態の管理
 const GameState = {
+  currentLevel: 1,
   GRID_SIZE: 5,
   startX: 0,
   startY: 0,
   goalX: 4,
   goalY: 4,
+  obstacles: [],
 
   // 現在のプレイヤー状態
   x: 0,
@@ -22,12 +63,28 @@ const GameState = {
   isRunning: false,
   shouldStop: false,
 
+  // レベルの読み込み
+  loadLevel(levelId) {
+    const level = LEVELS.find(l => l.id === levelId) || LEVELS[0];
+    this.currentLevel = level.id;
+    this.GRID_SIZE = level.gridSize;
+    this.startX = level.startX;
+    this.startY = level.startY;
+    this.goalX = level.goalX;
+    this.goalY = level.goalY;
+    this.obstacles = [...level.obstacles];
+    this.direction = level.startDirection;
+    this.totalRotation = level.startRotation;
+    this.reset();
+  },
+
   // 初期化・リセット
   reset() {
+    const level = LEVELS.find(l => l.id === this.currentLevel) || LEVELS[0];
     this.x = this.startX;
     this.y = this.startY;
-    this.direction = 1;
-    this.totalRotation = 90;
+    this.direction = level.startDirection;
+    this.totalRotation = level.startRotation;
     this.isRunning = false;
     this.shouldStop = false;
   }
@@ -180,7 +237,10 @@ const elements = {
   speakerAvatar: document.querySelector('.speaker-avatar'),
   victoryModal: document.getElementById('victory-modal'),
   modalCatsContainer: document.getElementById('modal-cats-container'),
+  modalNextBtn: document.getElementById('modal-next-btn'),
   modalCloseBtn: document.getElementById('modal-close-btn'),
+  legendObstacle: document.getElementById('legend-obstacle'),
+  levelButtons: document.querySelectorAll('.level-btn'),
   blocklyDiv: document.getElementById('blocklyDiv')
 };
 
@@ -358,9 +418,28 @@ function createGridBoard() {
         cell.appendChild(goalItems);
       }
 
+      // 障害物セル（ダンボール箱）
+      const isObstacle = GameState.obstacles.some(obs => obs.x === x && obs.y === y);
+      if (isObstacle) {
+        cell.classList.add('obstacle-cell');
+        const obstacleItem = document.createElement('div');
+        obstacleItem.className = 'obstacle-item';
+        obstacleItem.innerHTML = `
+          <span>📦</span>
+          <span class="obstacle-label">ダンボール</span>
+        `;
+        cell.appendChild(obstacleItem);
+      }
+
       elements.gridBoard.appendChild(cell);
     }
   }
+
+  // 凡例の障害物表示切り替え
+  if (elements.legendObstacle) {
+    elements.legendObstacle.style.display = GameState.obstacles.length > 0 ? 'inline-flex' : 'none';
+  }
+
   updateTokiPosition(false);
 }
 
@@ -521,6 +600,14 @@ async function runProgram() {
         await sleep(getStepDelay() + 200);
         elements.toki.classList.remove('shake-animation');
         break; // 停止
+      } else if (GameState.obstacles.some(obs => obs.x === nextX && obs.y === nextY)) {
+        // 障害物（ダンボール）に衝突！
+        setTokiMood('sad');
+        setMessage('あぶない！ ダンボールに ぶつかっちゃった！(＞＜) むきを かえてみよう！', 'sad');
+        elements.toki.classList.add('shake-animation');
+        await sleep(getStepDelay() + 200);
+        elements.toki.classList.remove('shake-animation');
+        break; // 停止
       } else {
         // 正常移動
         GameState.x = nextX;
@@ -587,9 +674,48 @@ function onGoalReached() {
     `;
   }
 
+  // 次のレベルの存在確認
+  const nextLevel = LEVELS.find(l => l.id === GameState.currentLevel + 1);
+  if (elements.modalNextBtn) {
+    if (nextLevel) {
+      elements.modalNextBtn.style.display = 'inline-flex';
+      elements.modalNextBtn.textContent = `${nextLevel.name} へすすむ！ 🐾`;
+    } else {
+      elements.modalNextBtn.style.display = 'none';
+    }
+  }
+
   setTimeout(() => {
     elements.victoryModal.classList.remove('hidden');
   }, 400);
+}
+
+/**
+ * レベルの切り替え
+ */
+function setLevel(levelId) {
+  if (GameState.isRunning) {
+    GameState.shouldStop = true;
+  }
+
+  GameState.loadLevel(levelId);
+
+  // ボタンのactive表示更新
+  elements.levelButtons.forEach(btn => {
+    if (parseInt(btn.dataset.level, 10) === levelId) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+
+  createGridBoard();
+  resetGame();
+
+  const currentLevelData = LEVELS.find(l => l.id === GameState.currentLevel);
+  if (currentLevelData) {
+    setMessage(currentLevelData.startMessage, 'toki');
+  }
 }
 
 /**
@@ -608,7 +734,9 @@ function resetGame() {
     workspace.highlightBlock(null);
   }
 
-  setMessage('スタートちてんに もどったよ！「うごかす！」をおしてね。', 'toki');
+  const currentLevelData = LEVELS.find(l => l.id === GameState.currentLevel);
+  const msg = currentLevelData ? currentLevelData.startMessage : 'スタートちてんに もどったよ！「うごかす！」をおしてね。';
+  setMessage(msg, 'toki');
   elements.runBtn.disabled = false;
 }
 
@@ -618,14 +746,38 @@ function resetGame() {
 function setupEventListeners() {
   elements.runBtn.addEventListener('click', runProgram);
   elements.resetBtn.addEventListener('click', resetGame);
+  
   elements.modalCloseBtn.addEventListener('click', () => {
     elements.victoryModal.classList.add('hidden');
     resetGame();
+  });
+
+  if (elements.modalNextBtn) {
+    elements.modalNextBtn.addEventListener('click', () => {
+      elements.victoryModal.classList.add('hidden');
+      const nextLevel = LEVELS.find(l => l.id === GameState.currentLevel + 1);
+      if (nextLevel) {
+        setLevel(nextLevel.id);
+      } else {
+        resetGame();
+      }
+    });
+  }
+
+  // レベル切り替えボタン
+  elements.levelButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const levelId = parseInt(btn.dataset.level, 10);
+      if (levelId && levelId !== GameState.currentLevel) {
+        setLevel(levelId);
+      }
+    });
   });
 }
 
 // 起動時初期化
 window.addEventListener('DOMContentLoaded', () => {
+  GameState.loadLevel(1);
   createGridBoard();
   initBlockly();
   setupEventListeners();

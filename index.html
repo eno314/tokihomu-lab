@@ -55,6 +55,15 @@
           </div>
         </div>
 
+        <!-- レベル選択タブ/ボタン -->
+        <div class="level-select-card">
+          <span class="level-label">もんだい：</span>
+          <div class="level-buttons" id="level-buttons">
+            <button class="level-btn active" data-level="1">🌟 レベル 1</button>
+            <button class="level-btn" data-level="2">📦 レベル 2</button>
+          </div>
+        </div>
+
         <!-- メッセージ・吹き出し表示エリア -->
         <div class="message-card">
           <div class="speaker-avatar">
@@ -93,9 +102,10 @@
 
         <!-- 5×5 グリッド盤面 -->
         <div class="board-card">
-          <div class="board-legend">
+          <div class="board-legend" id="board-legend">
             <span class="legend-item">🚩 スタート: トキ (🐾)</span>
-            <span class="legend-item">🎯 ゴール: ホムラ (🐈) と おさかな (🐟)</span>
+            <span class="legend-item">🎯 ゴール: ホムラ (🐈) と 🐟</span>
+            <span class="legend-item legend-obstacle" id="legend-obstacle" style="display: none;">📦 ダンボール</span>
           </div>
 
           <div class="grid-wrapper">
@@ -161,7 +171,8 @@
           <!-- JSでトキとホムラの可愛いアイコンを挿入 -->
         </div>
         <div class="modal-buttons">
-          <button id="modal-close-btn" class="btn btn-primary">もういちど あそぶ</button>
+          <button id="modal-next-btn" class="btn btn-primary">つぎのレベルへ！ 🐾</button>
+          <button id="modal-close-btn" class="btn btn-secondary">もういちど あそぶ</button>
         </div>
       </div>
     </div>
