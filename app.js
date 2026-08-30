@@ -33,10 +33,12 @@ const LEVELS = [
     goalX: 4,
     goalY: 4,
     obstacles: [
-      { x: 2, y: 0 },
-      { x: 2, y: 1 },
+      { x: 0, y: 1 },
       { x: 1, y: 3 },
-      { x: 2, y: 3 }
+      { x: 1, y: 3 },
+      { x: 2, y: 0 },
+      { x: 2, y: 2 },
+      { x: 4, y: 3 }
     ],
     startMessage: 'ダンボールに ぶつからないように まわりみちをして ゴールをめざそう！'
   },
@@ -287,9 +289,9 @@ function initBlockly() {
 
   // --- カスタムブロック: まえに すすむ ---
   Blockly.Blocks['toki_move'] = {
-    init: function() {
+    init: function () {
       this.appendDummyInput()
-          .appendField('まえに 1マス すすむ 🐾');
+        .appendField('まえに 1マス すすむ 🐾');
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour('#ff9800');
@@ -299,9 +301,9 @@ function initBlockly() {
 
   // --- カスタムブロック: みぎを むく ---
   Blockly.Blocks['toki_turn_right'] = {
-    init: function() {
+    init: function () {
       this.appendDummyInput()
-          .appendField('みぎを むく ↷');
+        .appendField('みぎを むく ↷');
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour('#2196f3');
@@ -311,9 +313,9 @@ function initBlockly() {
 
   // --- カスタムブロック: ひだりを むく ---
   Blockly.Blocks['toki_turn_left'] = {
-    init: function() {
+    init: function () {
       this.appendDummyInput()
-          .appendField('ひだりを むく ↶');
+        .appendField('ひだりを むく ↶');
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour('#00bcd4');
@@ -323,20 +325,20 @@ function initBlockly() {
 
   // --- カスタムブロック: くりかえす ---
   Blockly.Blocks['toki_repeat'] = {
-    init: function() {
+    init: function () {
       this.appendDummyInput()
-          .appendField(new Blockly.FieldDropdown([
-            ['2', '2'],
-            ['3', '3'],
-            ['4', '4'],
-            ['5', '5'],
-            ['6', '6'],
-            ['7', '7'],
-            ['8', '8']
-          ]), 'TIMES')
-          .appendField('かい くりかえす 🔁');
+        .appendField(new Blockly.FieldDropdown([
+          ['2', '2'],
+          ['3', '3'],
+          ['4', '4'],
+          ['5', '5'],
+          ['6', '6'],
+          ['7', '7'],
+          ['8', '8']
+        ]), 'TIMES')
+        .appendField('かい くりかえす 🔁');
       this.appendStatementInput('DO')
-          .appendField('これをする');
+        .appendField('これをする');
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour('#4caf50');
@@ -843,7 +845,7 @@ function resetGame() {
 function setupEventListeners() {
   elements.runBtn.addEventListener('click', runProgram);
   elements.resetBtn.addEventListener('click', resetGame);
-  
+
   elements.modalCloseBtn.addEventListener('click', () => {
     elements.victoryModal.classList.add('hidden');
     resetGame();
