@@ -39,6 +39,23 @@ const LEVELS = [
       { x: 2, y: 3 }
     ],
     startMessage: 'ダンボールに ぶつからないように まわりみちをして ゴールをめざそう！'
+  },
+  {
+    id: 3,
+    name: 'レベル 3',
+    title: 'うごくホムラをおいかけよう！',
+    description: 'ホムラが てくてく おさんぽしているよ！ トキが めいれいを 1つ じっこうするたびに うごくよ！',
+    gridSize: 5,
+    startX: 0,
+    startY: 0,
+    startDirection: 1,
+    startRotation: 90,
+    goalX: 4,
+    goalY: 4,
+    movingGoal: true,
+    homuraInitialDir: -1, // -1: 左, 1: 右
+    obstacles: [],
+    startMessage: 'ホムラが トキのめいれい（すすむ・むく）ごとに うごくよ！ 左端についたら右へ、右端についたら左へおりかえすよ！'
   }
 ];
 
@@ -51,6 +68,10 @@ const GameState = {
   goalX: 4,
   goalY: 4,
   obstacles: [],
+  movingGoal: false,
+  homuraX: 4,
+  homuraY: 4,
+  homuraDir: -1, // -1: 左, 1: 右
 
   // 現在のプレイヤー状態
   x: 0,
@@ -72,6 +93,11 @@ const GameState = {
     this.startY = level.startY;
     this.goalX = level.goalX;
     this.goalY = level.goalY;
+    this.movingGoal = !!level.movingGoal;
+    this.homuraInitialDir = level.homuraInitialDir || -1;
+    this.homuraX = level.goalX;
+    this.homuraY = level.goalY;
+    this.homuraDir = this.homuraInitialDir;
     this.obstacles = [...level.obstacles];
     this.direction = level.startDirection;
     this.totalRotation = level.startRotation;
@@ -85,6 +111,9 @@ const GameState = {
     this.y = this.startY;
     this.direction = level.startDirection;
     this.totalRotation = level.startRotation;
+    this.homuraX = level.goalX;
+    this.homuraY = level.goalY;
+    this.homuraDir = level.homuraInitialDir || -1;
     this.isRunning = false;
     this.shouldStop = false;
   }
@@ -399,25 +428,6 @@ function createGridBoard() {
         cell.appendChild(startLabel);
       }
 
-      // ゴール地点 (4, 4)
-      if (x === GameState.goalX && y === GameState.goalY) {
-        cell.classList.add('goal-cell');
-        const goalLabel = document.createElement('span');
-        goalLabel.className = 'goal-indicator';
-        goalLabel.textContent = 'ゴール';
-        cell.appendChild(goalLabel);
-
-        const goalItems = document.createElement('div');
-        goalItems.className = 'goal-items';
-        goalItems.innerHTML = `
-          <div class="homura-avatar">
-            ${HOMURA_SVG}
-          </div>
-          <span class="fish-item">🐟</span>
-        `;
-        cell.appendChild(goalItems);
-      }
-
       // 障害物セル（ダンボール箱）
       const isObstacle = GameState.obstacles.some(obs => obs.x === x && obs.y === y);
       if (isObstacle) {
@@ -435,12 +445,78 @@ function createGridBoard() {
     }
   }
 
+  // ゴール（ホムラ）の描画
+  updateGoalDisplay();
+
   // 凡例の障害物表示切り替え
   if (elements.legendObstacle) {
     elements.legendObstacle.style.display = GameState.obstacles.length > 0 ? 'inline-flex' : 'none';
   }
 
   updateTokiPosition(false);
+}
+
+/**
+ * ゴール（ホムラとおさかな）の盤面表示更新
+ */
+function updateGoalDisplay() {
+  // 全セルからゴール表示をクリア
+  const allCells = elements.gridBoard.querySelectorAll('.grid-cell');
+  allCells.forEach(cell => {
+    cell.classList.remove('goal-cell');
+    const indicator = cell.querySelector('.goal-indicator');
+    if (indicator) indicator.remove();
+    const items = cell.querySelector('.goal-items');
+    if (items) items.remove();
+  });
+
+  // 現在のホムラ座標のセルを取得
+  const targetCell = elements.gridBoard.querySelector(
+    `.grid-cell[data-x="${GameState.homuraX}"][data-y="${GameState.homuraY}"]`
+  );
+
+  if (targetCell) {
+    targetCell.classList.add('goal-cell');
+
+    const goalLabel = document.createElement('span');
+    goalLabel.className = 'goal-indicator';
+    goalLabel.textContent = 'ゴール';
+    targetCell.appendChild(goalLabel);
+
+    const goalItems = document.createElement('div');
+    goalItems.className = 'goal-items';
+    // 向きに応じてホムラの向きを反映（1: 右向きなら反転、-1: 左向きなら通常）
+    const flipStyle = GameState.homuraDir === 1 ? 'transform: scaleX(-1);' : '';
+    goalItems.innerHTML = `
+      <div class="homura-avatar" style="${flipStyle}">
+        ${HOMURA_SVG}
+      </div>
+      <span class="fish-item">🐟</span>
+    `;
+    targetCell.appendChild(goalItems);
+  }
+}
+
+/**
+ * ホムラの移動ロジック（レベル3用）
+ * トキが1歩動くたびにホムラが移動
+ * 左端に来たら右に移動するようになり、右端に来たら左に移動するようになる
+ */
+function moveHomura() {
+  if (!GameState.movingGoal) return;
+
+  GameState.homuraX += GameState.homuraDir;
+
+  // 端に来たら進行方向を切り替え
+  if (GameState.homuraX <= 0) {
+    GameState.homuraX = 0;
+    GameState.homuraDir = 1; // 右に移動するようになる
+  } else if (GameState.homuraX >= GameState.GRID_SIZE - 1) {
+    GameState.homuraX = GameState.GRID_SIZE - 1;
+    GameState.homuraDir = -1; // 左に移動するようになる
+  }
+
+  updateGoalDisplay();
 }
 
 /**
@@ -580,6 +656,8 @@ async function runProgram() {
       workspace.highlightBlock(cmd.blockId);
     }
 
+    let actionExecuted = false;
+
     if (cmd.type === 'MOVE') {
       // 向きに応じた移動ベクトル
       // 0: 上, 1: 右, 2: 下, 3: 左
@@ -614,12 +692,14 @@ async function runProgram() {
         GameState.y = nextY;
         updateTokiPosition(true);
         setMessage(`まえに すすんだよ！ (いまの ばしょ: ${GameState.x}, ${GameState.y})`, 'toki');
-      }
 
-      // ゴール判定
-      if (GameState.x === GameState.goalX && GameState.y === GameState.goalY) {
-        onGoalReached();
-        break;
+        // トキが移動したマスにホムラが居たか判定
+        if (GameState.x === GameState.homuraX && GameState.y === GameState.homuraY) {
+          onGoalReached();
+          break;
+        }
+
+        actionExecuted = true;
       }
     } else if (cmd.type === 'TURN_RIGHT') {
       // 右を向く（+90度）
@@ -627,12 +707,28 @@ async function runProgram() {
       GameState.totalRotation += 90;
       updateTokiPosition(true);
       setMessage('みぎを むいたよ！ ↷', 'toki');
+      actionExecuted = true;
     } else if (cmd.type === 'TURN_LEFT') {
       // 左を向く（-90度）
       GameState.direction = (GameState.direction + 3) % 4;
       GameState.totalRotation -= 90;
       updateTokiPosition(true);
       setMessage('ひだりを むいたよ！ ↶', 'toki');
+      actionExecuted = true;
+    }
+
+    // トキが命令（進む・向く）を実行するたびに動くゴールの処理（レベル3）
+    if (actionExecuted && GameState.movingGoal) {
+      await sleep(Math.min(250, Math.floor(getStepDelay() / 2)));
+      if (GameState.shouldStop) break;
+      moveHomura();
+      setMessage(`ホムラも てくてく うごいたよ！ (ホムラの ばしょ: ${GameState.homuraX}, ${GameState.homuraY})`, 'homura');
+
+      // ホムラがトキのいるマスに移動してきたか判定
+      if (GameState.x === GameState.homuraX && GameState.y === GameState.homuraY) {
+        onGoalReached();
+        break;
+      }
     }
 
     await sleep(getStepDelay());
@@ -644,7 +740,7 @@ async function runProgram() {
   }
 
   // 終了時のメッセージ（ゴール未到達時）
-  if (GameState.isRunning && !(GameState.x === GameState.goalX && GameState.y === GameState.goalY)) {
+  if (GameState.isRunning && !(GameState.x === GameState.homuraX && GameState.y === GameState.homuraY)) {
     setMessage('プログラムのおわりまで うごいたよ！ ゴールまで あとすこし！', 'toki');
   }
 
@@ -729,6 +825,7 @@ function resetGame() {
   elements.toki.classList.remove('victory-jump', 'shake-animation');
   elements.victoryModal.classList.add('hidden');
   updateTokiPosition(true);
+  updateGoalDisplay();
 
   if (workspace) {
     workspace.highlightBlock(null);
