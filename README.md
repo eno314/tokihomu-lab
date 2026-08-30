@@ -51,3 +51,43 @@ Google Blocklyでブロックを組み立て、画面上の白黒ハチワレ猫
 - HTML5 / CSS3 (CSS Grid, Flexbox, CSS Variables, Transitions & Keyframes)
 - Vanilla JavaScript (ES6+, async/await)
 - [Google Blockly](https://developers.google.com/blockly) (CDN)
+- [Playwright](https://playwright.dev/) (UI・E2Eテスト)
+
+---
+
+## 🧪 UIテストの実行 (Playwright)
+
+本プロジェクトでは Playwright を用いた UI 自動テストを導入しています。
+
+### ローカルでのテスト実行
+
+```bash
+# 依存パッケージのインストール
+npm install
+
+# Playwright ブラウザのインストール
+npx playwright install --with-deps chromium
+
+# UIテストの実行
+npm test
+
+# UIモードでインタラクティブに実行
+npm run test:ui
+```
+
+> **Podman を利用して実行する場合**:
+> ```bash
+> podman run --rm -it -v $(pwd):/work:Z -w /work mcr.microsoft.com/playwright:latest npx playwright test
+> ```
+
+---
+
+## 🚀 CI/CD パイプライン
+
+GitHub Actions により以下のフローが自動化されています:
+
+1. **Pull Request 作成・更新時**:
+   - Playwright による UI テストが自動実行され、リグレッションを防止します。
+2. **main ブランチへのマージ・Push 時**:
+   - UI テストジョブが実行されます。
+   - **UI テストがすべて成功した場合にのみ**、GitHub Pages への自動デプロイジョブが実行されます。

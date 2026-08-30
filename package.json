@@ -1,0 +1,22 @@
+{
+  "name": "tokihomu-lab",
+  "version": "1.0.0",
+  "description": "tokihomu-lab (ときほむラボ) - 子供向けビジュアルプログラミング学習Webゲーム",
+  "main": "index.html",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui"
+  },
+  "keywords": [
+    "blockly",
+    "programming-game",
+    "kids",
+    "education"
+  ],
+  "author": "eno314",
+  "license": "Apache-2.0",
+  "devDependencies": {
+    "@playwright/test": "^1.62.1"
+  }
+}
