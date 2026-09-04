@@ -140,4 +140,123 @@ test.describe('tokihomu-lab (ときほむラボ) UIテスト', () => {
     const level2Btn = page.locator('.level-btn[data-level="2"]');
     await expect(level2Btn).toHaveClass(/active/);
   });
+
+  test('おもちゃあつめモード: モード切り替えで専用UI・おもちゃセル・凡例が表示されること', async ({ page }) => {
+    // おもちゃあつめタブをクリック
+    const toyTab = page.locator('.mode-tab[data-mode="toy"]');
+    await toyTab.click();
+    await expect(toyTab).toHaveClass(/active/);
+
+    // おもちゃカウンターと凡例が表示される
+    await expect(page.locator('#toy-counter')).toBeVisible();
+    await expect(page.locator('#toy-counter-text')).toHaveText('0 / 1');
+    await expect(page.locator('#legend-toy')).toBeVisible();
+
+    // 盤面におもちゃセル（1個）が存在する
+    const toyCells = page.locator('.toy-cell');
+    await expect(toyCells).toHaveCount(1);
+
+    // レベルボタンがおもちゃモード用（レベル1, 2）になる
+    const levelBtns = page.locator('.level-btn');
+    await expect(levelBtns).toHaveCount(2);
+
+    // レベル2に切り替え
+    const level2Btn = page.locator('.level-btn[data-level="2"]');
+    await level2Btn.click();
+    await expect(level2Btn).toHaveClass(/active/);
+    await expect(page.locator('#toy-counter-text')).toHaveText('0 / 2');
+    await expect(page.locator('.toy-cell')).toHaveCount(2);
+
+    // おにごっこタブに戻す
+    const chaseTab = page.locator('.mode-tab[data-mode="chase"]');
+    await chaseTab.click();
+    await expect(chaseTab).toHaveClass(/active/);
+    await expect(page.locator('#toy-counter')).not.toBeVisible();
+    await expect(page.locator('#legend-toy')).not.toBeVisible();
+    await expect(page.locator('.toy-cell')).toHaveCount(0);
+    await expect(page.locator('.level-btn')).toHaveCount(4);
+  });
+
+  test('おもちゃあつめモード: 空振り時にエラー停止せず注意喚起メッセージが表示されること', async ({ page }) => {
+    // おもちゃあつめモードに切り替え
+    await page.locator('.mode-tab[data-mode="toy"]').click();
+    await page.selectOption('#speed-select', '250');
+
+    // スタート地点（0, 0: おもちゃなし）で「おもちゃを ひろう」ブロックを配置
+    await page.evaluate(() => {
+      workspace.clear();
+      const pickupBlock = workspace.newBlock('toki_pickup');
+      pickupBlock.initSvg();
+      pickupBlock.render();
+      pickupBlock.moveTo(new Blockly.utils.Coordinate(30, 30));
+    });
+
+    await page.locator('#run-btn').click();
+
+    // 空振りメッセージを確認
+    const statusMsg = page.locator('#status-message');
+    await expect(statusMsg).toContainText('ここには おもちゃが ないよ', { timeout: 5000 });
+  });
+
+  test('おもちゃあつめモード: おもちゃ未回収のままホムラに到達してもクリアにならないこと', async ({ page }) => {
+    // おもちゃあつめモードに切り替え（レベル1: トキ(0,0), おもちゃ(2,0), ホムラ(4,0)）
+    await page.locator('.mode-tab[data-mode="toy"]').click();
+    await page.selectOption('#speed-select', '250');
+
+    // おもちゃを拾わずに前進×4でホムラに直行するプログラムを配置
+    await page.evaluate(() => {
+      workspace.clear();
+      const b1 = workspace.newBlock('toki_move');
+      const b2 = workspace.newBlock('toki_move');
+      const b3 = workspace.newBlock('toki_move');
+      const b4 = workspace.newBlock('toki_move');
+      b1.nextConnection.connect(b2.previousConnection);
+      b2.nextConnection.connect(b3.previousConnection);
+      b3.nextConnection.connect(b4.previousConnection);
+      b1.initSvg(); b1.render();
+      b2.initSvg(); b2.render();
+      b3.initSvg(); b3.render();
+      b4.initSvg(); b4.render();
+    });
+
+    await page.locator('#run-btn').click();
+
+    // ホムラが「おもちゃが まだ たりない」と注意し、ゴールモーダルは表示されない
+    const statusMsg = page.locator('#status-message');
+    await expect(statusMsg).toContainText('おもちゃが まだ たりない', { timeout: 10000 });
+    await expect(page.locator('#victory-modal')).toHaveClass(/hidden/);
+  });
+
+  test('おもちゃあつめモード: おもちゃを回収してからホムラに到達するとクリアできること', async ({ page }) => {
+    // おもちゃあつめモードに切り替え（レベル1: トキ(0,0), おもちゃ(2,0), ホムラ(4,0)）
+    await page.locator('.mode-tab[data-mode="toy"]').click();
+    await page.selectOption('#speed-select', '250');
+
+    // 前進×2 → ひろう → 前進×2
+    await page.evaluate(() => {
+      workspace.clear();
+      const m1 = workspace.newBlock('toki_move');
+      const m2 = workspace.newBlock('toki_move');
+      const p = workspace.newBlock('toki_pickup');
+      const m3 = workspace.newBlock('toki_move');
+      const m4 = workspace.newBlock('toki_move');
+
+      m1.nextConnection.connect(m2.previousConnection);
+      m2.nextConnection.connect(p.previousConnection);
+      p.nextConnection.connect(m3.previousConnection);
+      m3.nextConnection.connect(m4.previousConnection);
+
+      [m1, m2, p, m3, m4].forEach(b => { b.initSvg(); b.render(); });
+    });
+
+    await page.locator('#run-btn').click();
+
+    // おもちゃ回収でカウンターが「1 / 1」に更新されること
+    await expect(page.locator('#toy-counter-text')).toHaveText('1 / 1', { timeout: 10000 });
+
+    // ゴール達成モーダルが表示されること
+    const victoryModal = page.locator('#victory-modal');
+    await expect(victoryModal).not.toHaveClass(/hidden/, { timeout: 10000 });
+    await expect(page.locator('#victory-title')).toContainText('おもちゃを ぜんぶ とどけたよ');
+  });
 });
