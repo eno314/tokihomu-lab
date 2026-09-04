@@ -4,8 +4,9 @@ test.describe('tokihomu-lab (ときほむラボ) UIテスト', () => {
   test.beforeEach(async ({ page }) => {
     // 各テスト前にトップページへアクセス
     await page.goto('/');
-    // 盤面セルの描画完了を待機
+    // 盤面セルの描画完了およびBlocklyの初期化完了を待機
     await page.waitForSelector('#grid-board .grid-cell');
+    await page.waitForFunction(() => typeof window.Blockly !== 'undefined' && !!document.querySelector('#blocklyDiv .blocklySvg'));
   });
 
   test('初期表示: タイトル、ヘッダー、主要コンポーネントが正しく表示されること', async ({ page }) => {
@@ -195,7 +196,7 @@ test.describe('tokihomu-lab (ときほむラボ) UIテスト', () => {
 
     // 空振りメッセージを確認
     const statusMsg = page.locator('#status-message');
-    await expect(statusMsg).toContainText('ここには おもちゃが ないよ', { timeout: 5000 });
+    await expect(statusMsg).toContainText('ここには ぬいぐるみが ないよ', { timeout: 5000 });
   });
 
   test('おもちゃあつめモード: おもちゃ未回収のままホムラに到達してもクリアにならないこと', async ({ page }) => {
@@ -221,9 +222,9 @@ test.describe('tokihomu-lab (ときほむラボ) UIテスト', () => {
 
     await page.locator('#run-btn').click();
 
-    // ホムラが「おもちゃが まだ たりない」と注意し、ゴールモーダルは表示されない
+    // ホムラが「ぬいぐるみが まだ たりない」と注意し、ゴールモーダルは表示されない
     const statusMsg = page.locator('#status-message');
-    await expect(statusMsg).toContainText('おもちゃが まだ たりない', { timeout: 10000 });
+    await expect(statusMsg).toContainText('ぬいぐるみが まだ たりない', { timeout: 10000 });
     await expect(page.locator('#victory-modal')).toHaveClass(/hidden/);
   });
 
@@ -257,6 +258,6 @@ test.describe('tokihomu-lab (ときほむラボ) UIテスト', () => {
     // ゴール達成モーダルが表示されること
     const victoryModal = page.locator('#victory-modal');
     await expect(victoryModal).not.toHaveClass(/hidden/, { timeout: 10000 });
-    await expect(page.locator('#victory-title')).toContainText('おもちゃを ぜんぶ とどけたよ');
+    await expect(page.locator('#victory-title')).toContainText('ぬいぐるみを ぜんぶ とどけたよ');
   });
 });

@@ -96,8 +96,8 @@ const LEVELS_TOY = [
   {
     id: 1,
     name: 'レベル 1',
-    title: 'はじめての おもちゃあつめ',
-    description: 'おもちゃを ひろってから、ホムラにあいにいこう！',
+    title: 'エビの ぬいぐるみ',
+    description: 'エビの ぬいぐるみを ひろってから、ホムラにあいにいこう！',
     gridSize: 5,
     startX: 0,
     startY: 0,
@@ -107,16 +107,16 @@ const LEVELS_TOY = [
     goalY: 0,
     obstacles: [],
     toys: [
-      { id: 'toy-1', x: 2, y: 0, icon: '🧸', name: 'くまのぬいぐるみ' }
+      { id: 'toy-1', x: 2, y: 0, icon: '🦐', name: 'エビのぬいぐるみ' }
     ],
-    startMessage: 'みちにおもちゃが あるよ！「ひろう」ブロックをつかって おもちゃを ひろってから ホムラのところへいこう！',
+    startMessage: 'みちに エビのぬいぐるみが あるよ！「ひろう」ブロックをつかって ひろってから ホムラのところへいこう！',
     minBlocks: 5
   },
   {
     id: 2,
     name: 'レベル 2',
-    title: 'おもちゃを 2つ あつめよう！',
-    description: 'ダンボールを よけながら、2つのおもちゃを あつめて ホムラにあいにいこう！',
+    title: 'エビと ボール',
+    description: 'ダンボールを よけながら、エビと ボールの ぬいぐるみを あつめて ホムラにあいにいこう！',
     gridSize: 5,
     startX: 0,
     startY: 0,
@@ -130,10 +130,10 @@ const LEVELS_TOY = [
       { x: 3, y: 2 }
     ],
     toys: [
-      { id: 'toy-1', x: 2, y: 0, icon: '🧸', name: 'くまのぬいぐるみ' },
-      { id: 'toy-2', x: 2, y: 4, icon: '🧶', name: 'けいとだま' }
+      { id: 'toy-1', x: 2, y: 0, icon: '🦐', name: 'エビのぬいぐるみ' },
+      { id: 'toy-2', x: 2, y: 4, icon: '🎾', name: 'ボールのぬいぐるみ' }
     ],
-    startMessage: 'おもちゃが 2つ あるよ！ ダンボールをよけて ぜんぶひろってから ホムラに あいにいこう！',
+    startMessage: 'エビと ボールの ぬいぐるみが あるよ！ ダンボールをよけて ぜんぶひろってから ホムラに あいにいこう！',
     minBlocks: 11
   }
 ];
@@ -430,15 +430,15 @@ function initBlockly() {
     }
   };
 
-  // --- カスタムブロック: おもちゃを ひろう ---
+  // --- カスタムブロック: ぬいぐるみを ひろう ---
   Blockly.Blocks['toki_pickup'] = {
     init: function () {
       this.appendDummyInput()
-        .appendField('おもちゃを ひろう 🐾');
+        .appendField('ぬいぐるみを ひろう 🐾');
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour('#e91e63');
-      this.setTooltip('いまいるマスの おもちゃを ひろいます');
+      this.setTooltip('いまいるマスの ぬいぐるみを ひろいます');
     }
   };
 
@@ -570,8 +570,8 @@ function createGridBoard() {
         toyItem.className = 'toy-item';
         toyItem.dataset.toyId = toy.id;
         toyItem.innerHTML = `
-          <span>${toy.icon || '🧸'}</span>
-          <span class="toy-label">おもちゃ</span>
+          <span>${toy.icon || '🦐'}</span>
+          <span class="toy-label">ぬいぐるみ</span>
         `;
         cell.appendChild(toyItem);
       }
@@ -918,7 +918,7 @@ async function runProgram() {
         if (GameState.x === GameState.homuraX && GameState.y === GameState.homuraY) {
           if (GameState.currentMode === 'toy' && GameState.collectedToys.length < GameState.toys.length) {
             const remaining = GameState.toys.length - GameState.collectedToys.length;
-            setMessage(`ホムラ「おもちゃが まだ たりないニャ〜！(あと ${remaining}こ) あつめてきてね！」`, 'homura');
+            setMessage(`ホムラ「ぬいぐるみが まだ たりないニャ〜！(あと ${remaining}こ) あつめてきてね！」`, 'homura');
           } else {
             isSuccess = true;
             onGoalReached();
@@ -943,22 +943,24 @@ async function runProgram() {
       setMessage('ひだりを むいたよ！ ↶', 'toki');
       actionExecuted = true;
     } else if (cmd.type === 'PICKUP') {
-      // おもちゃをひろう
+      // ぬいぐるみをひろう
       const pickedToy = pickupToyAt(GameState.x, GameState.y);
       if (pickedToy) {
         setTokiMood('happy');
         const remaining = GameState.toys.length - GameState.collectedToys.length;
+        const toyName = pickedToy.name || 'ぬいぐるみ';
+        const toyIcon = pickedToy.icon || '🦐';
         if (remaining > 0) {
-          setMessage(`おもちゃ（${pickedToy.icon || '🧸'}）を ひろったよ！ (のこり: ${remaining}こ)`, 'happy');
+          setMessage(`${toyName}（${toyIcon}）を ひろったよ！ (のこり: ${remaining}こ)`, 'happy');
         } else {
-          setMessage(`おもちゃ（${pickedToy.icon || '🧸'}）を ひろったよ！ ぜんぶあつまった！ホムラのところへいこう！🎉`, 'happy');
+          setMessage(`${toyName}（${toyIcon}）を ひろったよ！ ぜんぶあつまった！ホムラのところへいこう！🎉`, 'happy');
         }
         await sleep(Math.min(350, getStepDelay()));
         setTokiMood('normal');
       } else {
-        // 空振り：おもちゃがないマスでの実行（エラー停止せず次に進む）
+        // 空振り：ぬいぐるみがないマスでの実行（エラー停止せず次に進む）
         elements.toki.classList.add('tilt-animation');
-        setMessage('あれ？ ここには おもちゃが ないよ？ キョロキョロ…(・_・ )', 'toki');
+        setMessage('あれ？ ここには ぬいぐるみが ないよ？ キョロキョロ…(・_・ )', 'toki');
         await sleep(getStepDelay());
         elements.toki.classList.remove('tilt-animation');
       }
@@ -976,7 +978,7 @@ async function runProgram() {
       if (GameState.x === GameState.homuraX && GameState.y === GameState.homuraY) {
         if (GameState.currentMode === 'toy' && GameState.collectedToys.length < GameState.toys.length) {
           const remaining = GameState.toys.length - GameState.collectedToys.length;
-          setMessage(`ホムラ「おもちゃが まだ たりないニャ〜！(あと ${remaining}こ) あつめてきてね！」`, 'homura');
+          setMessage(`ホムラ「ぬいぐるみが まだ たりないニャ〜！(あと ${remaining}こ) あつめてきてね！」`, 'homura');
         } else {
           isSuccess = true;
           onGoalReached();
@@ -998,7 +1000,7 @@ async function runProgram() {
     setTokiMood('sad');
     if (GameState.currentMode === 'toy' && GameState.collectedToys.length < GameState.toys.length) {
       const remaining = GameState.toys.length - GameState.collectedToys.length;
-      setMessage(`おもちゃを ぜんぶ あつめられなかったよ…！(あと ${remaining}こ) 「リセット」をおして やりなおしてね！`, 'sad');
+      setMessage(`ぬいぐるみを ぜんぶ あつめられなかったよ…！(あと ${remaining}こ) 「リセット」をおして やりなおしてね！`, 'sad');
     } else {
       setMessage('ホムラをつかまえられなかったよ…！(＞＜) 「リセット」をおして やりなおしてね！', 'sad');
     }
@@ -1029,7 +1031,7 @@ function onGoalReached() {
   if (isPerfect) {
     setMessage(`やったー！これ以上短くできない完璧なプログラムだよ！すごい！おめでとう！💮✨ (使ったブロック: ${usedBlocks}個)`, 'happy');
   } else {
-    const successAction = isToyMode ? 'おもちゃをあつめて ホムラにあえたよ！🎉' : 'ホムラをつかまえたよ！🎉';
+    const successAction = isToyMode ? 'ぬいぐるみをあつめて ホムラにあえたよ！🎉' : 'ホムラをつかまえたよ！🎉';
     setMessage(`${successAction} くりかえし等をつかうと、もっと短くできるよ！ちょうせんしてみてね！💡 (いまのブロック: ${usedBlocks}個)`, 'happy');
   }
 
@@ -1051,14 +1053,14 @@ function onGoalReached() {
   // モーダル内のメッセージ・評価の更新
   if (elements.victoryTitle) {
     elements.victoryTitle.textContent = isPerfect
-      ? (isToyMode ? '🌟 かんぺき！ おもちゃを ぜんぶ とどけたよ！ 🌟' : '🌟 かんぺき！ 大せいこう！ 🌟')
-      : (isToyMode ? '🎉 おもちゃを ぜんぶ とどけたよ！ 🎉' : '🎉 タッチ！ つかまえたよ！ 🎉');
+      ? (isToyMode ? '🌟 かんぺき！ ぬいぐるみを ぜんぶ とどけたよ！ 🌟' : '🌟 かんぺき！ 大せいこう！ 🌟')
+      : (isToyMode ? '🎉 ぬいぐるみを ぜんぶ とどけたよ！ 🎉' : '🎉 タッチ！ つかまえたよ！ 🎉');
   }
   if (elements.victoryDesc) {
-    const clearDesc = isToyMode ? 'おもちゃをぜんぶあつめて ホムラにあえたよ！にゃーん！🎉' : 'ホムラをつかまえたよ！にゃーん！🎉';
+    const clearDesc = isToyMode ? 'ぬいぐるみをぜんぶあつめて ホムラにあえたよ！にゃーん！🎉' : 'ホムラをつかまえたよ！にゃーん！🎉';
     elements.victoryDesc.innerHTML = isPerfect
       ? `${clearDesc}<br><strong>これ以上 短くできない 完璧なプログラムです！</strong>`
-      : `${clearDesc}<br>${isToyMode ? 'おもちゃあつめ だいせいこう！' : 'おにごっこ せいこう！'}`;
+      : `${clearDesc}<br>${isToyMode ? 'ぬいぐるみあつめ だいせいこう！' : 'おにごっこ せいこう！'}`;
   }
   if (elements.victoryEvaluation) {
     if (isPerfect) {
@@ -1148,7 +1150,7 @@ function renderLevelButtons() {
     btn.dataset.level = level.id;
     let icon = '🌟';
     if (GameState.currentMode === 'toy') {
-      icon = level.id === 1 ? '🧸' : '🧶';
+      icon = level.id === 1 ? '🦐' : '🎾';
     } else {
       icon = level.id === 1 ? '🌟' : level.id === 2 ? '📦' : level.id === 3 ? '🐾' : '👑';
     }
