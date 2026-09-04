@@ -3,8 +3,8 @@
  * 子供向けプログラミング学習ゲーム コアスクリプト
  */
 
-// レベルデータ定義
-const LEVELS = [
+// レベルデータ定義: おにごっこモード (きほん)
+const LEVELS_CHASE = [
   {
     id: 1,
     name: 'レベル 1',
@@ -18,6 +18,7 @@ const LEVELS = [
     goalX: 4,
     goalY: 4,
     obstacles: [],
+    toys: [],
     startMessage: '「うごかす！」ボタンをおすと、トキがうごきだすよ！',
     minBlocks: 5
   },
@@ -40,6 +41,7 @@ const LEVELS = [
       { x: 2, y: 2 },
       { x: 3, y: 3 }
     ],
+    toys: [],
     startMessage: 'ダンボールに ぶつからないように まわりみちをして ホムラをつかまえよう！',
     minBlocks: 8
   },
@@ -58,6 +60,7 @@ const LEVELS = [
     movingGoal: true,
     homuraInitialDir: -1, // -1: 左, 1: 右
     obstacles: [],
+    toys: [],
     startMessage: 'ホムラが トキのめいれい（すすむ・むく）ごとに にげるよ！ 左端についたら右へ、右端についたら左へおりかえすよ！',
     minBlocks: 3
   },
@@ -82,13 +85,65 @@ const LEVELS = [
       { x: 2, y: 2 },
       { x: 3, y: 3 }
     ],
+    toys: [],
     startMessage: 'ダンボールに ぶつからないように まわりみちをしながら、にげるホムラを つかまえよう！',
     minBlocks: 11
   }
 ];
 
+// レベルデータ定義: おもちゃあつめモード (おうよう)
+const LEVELS_TOY = [
+  {
+    id: 1,
+    name: 'レベル 1',
+    title: 'エビの ぬいぐるみ',
+    description: 'エビの ぬいぐるみを ひろってから、ホムラにあいにいこう！',
+    gridSize: 5,
+    startX: 0,
+    startY: 0,
+    startDirection: 1,
+    startRotation: 90,
+    goalX: 4,
+    goalY: 4,
+    obstacles: [],
+    toys: [
+      { id: 'toy-1', x: 2, y: 2, icon: '🦐', name: 'エビのぬいぐるみ' }
+    ],
+    startMessage: 'まんなかに エビのぬいぐるみが あるよ！「ひろう」ブロックをつかって ひろってから みぎしたの ホムラのところへいこう！',
+    minBlocks: 11
+  },
+  {
+    id: 2,
+    name: 'レベル 2',
+    title: 'エビと ボール',
+    description: 'ダンボールを よけながら、エビと ボールの ぬいぐるみを あつめて ホムラにあいにいこう！',
+    gridSize: 5,
+    startX: 0,
+    startY: 0,
+    startDirection: 1,
+    startRotation: 90,
+    goalX: 4,
+    goalY: 4,
+    obstacles: [
+      { x: 1, y: 2 },
+      { x: 2, y: 2 },
+      { x: 3, y: 2 }
+    ],
+    toys: [
+      { id: 'toy-1', x: 2, y: 0, icon: '🦐', name: 'エビのぬいぐるみ' },
+      { id: 'toy-2', x: 2, y: 4, icon: '🎾', name: 'ボールのぬいぐるみ' }
+    ],
+    startMessage: 'エビと ボールの ぬいぐるみが あるよ！ ダンボールをよけて ぜんぶひろってから ホムラに あいにいこう！',
+    minBlocks: 11
+  }
+];
+
+// 後方互換用エイリアス
+const LEVELS = LEVELS_CHASE;
+
 // ゲーム状態の管理
 const GameState = {
+  currentMode: 'chase', // 'chase' | 'toy'
   currentLevel: 1,
   GRID_SIZE: 5,
   startX: 0,
@@ -96,6 +151,8 @@ const GameState = {
   goalX: 4,
   goalY: 4,
   obstacles: [],
+  toys: [],
+  collectedToys: [], // 収集済みtoyのid配列
   movingGoal: false,
   homuraX: 4,
   homuraY: 4,
@@ -112,9 +169,22 @@ const GameState = {
   isRunning: false,
   shouldStop: false,
 
+  // 現在のモードのレベル一覧を取得
+  getCurrentLevels() {
+    return this.currentMode === 'toy' ? LEVELS_TOY : LEVELS_CHASE;
+  },
+
+  // 現在のレベルデータを取得
+  getCurrentLevelData() {
+    const levels = this.getCurrentLevels();
+    return levels.find(l => l.id === this.currentLevel) || levels[0];
+  },
+
   // レベルの読み込み
-  loadLevel(levelId) {
-    const level = LEVELS.find(l => l.id === levelId) || LEVELS[0];
+  loadLevel(levelId, mode = this.currentMode) {
+    this.currentMode = mode;
+    const levels = this.getCurrentLevels();
+    const level = levels.find(l => l.id === levelId) || levels[0];
     this.currentLevel = level.id;
     this.GRID_SIZE = level.gridSize;
     this.startX = level.startX;
@@ -126,7 +196,8 @@ const GameState = {
     this.homuraX = level.goalX;
     this.homuraY = level.goalY;
     this.homuraDir = this.homuraInitialDir;
-    this.obstacles = [...level.obstacles];
+    this.obstacles = [...(level.obstacles || [])];
+    this.toys = (level.toys || []).map(t => ({ ...t }));
     this.direction = level.startDirection;
     this.totalRotation = level.startRotation;
     this.reset();
@@ -134,7 +205,7 @@ const GameState = {
 
   // 初期化・リセット
   reset() {
-    const level = LEVELS.find(l => l.id === this.currentLevel) || LEVELS[0];
+    const level = this.getCurrentLevelData();
     this.x = this.startX;
     this.y = this.startY;
     this.direction = level.startDirection;
@@ -142,6 +213,8 @@ const GameState = {
     this.homuraX = level.goalX;
     this.homuraY = level.goalY;
     this.homuraDir = level.homuraInitialDir || -1;
+    this.toys = (level.toys || []).map(t => ({ ...t }));
+    this.collectedToys = [];
     this.isRunning = false;
     this.shouldStop = false;
   }
@@ -300,7 +373,12 @@ const elements = {
   modalNextBtn: document.getElementById('modal-next-btn'),
   modalCloseBtn: document.getElementById('modal-close-btn'),
   legendObstacle: document.getElementById('legend-obstacle'),
+  legendToy: document.getElementById('legend-toy'),
+  toyCounter: document.getElementById('toy-counter'),
+  toyCounterText: document.getElementById('toy-counter-text'),
+  levelButtonsContainer: document.getElementById('level-buttons'),
   levelButtons: document.querySelectorAll('.level-btn'),
+  modeTabs: document.querySelectorAll('.mode-tab'),
   blocklyDiv: document.getElementById('blocklyDiv')
 };
 
@@ -349,6 +427,18 @@ function initBlockly() {
       this.setNextStatement(true, null);
       this.setColour('#00bcd4');
       this.setTooltip('ひだりがわ（はんとけいまわり）に むきをかえます');
+    }
+  };
+
+  // --- カスタムブロック: ぬいぐるみを ひろう ---
+  Blockly.Blocks['toki_pickup'] = {
+    init: function () {
+      this.appendDummyInput()
+        .appendField('ぬいぐるみを ひろう 🐾');
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour('#e91e63');
+      this.setTooltip('いまいるマスの ぬいぐるみを ひろいます');
     }
   };
 
@@ -472,6 +562,20 @@ function createGridBoard() {
         cell.appendChild(obstacleItem);
       }
 
+      // おもちゃセル
+      const toy = GameState.toys.find(t => t.x === x && t.y === y && !GameState.collectedToys.includes(t.id));
+      if (toy) {
+        cell.classList.add('toy-cell');
+        const toyItem = document.createElement('div');
+        toyItem.className = 'toy-item';
+        toyItem.dataset.toyId = toy.id;
+        toyItem.innerHTML = `
+          <span>${toy.icon || '🦐'}</span>
+          <span class="toy-label">ぬいぐるみ</span>
+        `;
+        cell.appendChild(toyItem);
+      }
+
       elements.gridBoard.appendChild(cell);
     }
   }
@@ -484,7 +588,62 @@ function createGridBoard() {
     elements.legendObstacle.style.display = GameState.obstacles.length > 0 ? 'inline-flex' : 'none';
   }
 
+  // おもちゃカウンターと凡例の表示更新
+  updateToyCounterDisplay();
+
   updateTokiPosition(false);
+}
+
+/**
+ * おもちゃカウンターと凡例の表示更新
+ */
+function updateToyCounterDisplay() {
+  const total = GameState.toys.length;
+  const isToyMode = GameState.currentMode === 'toy' && total > 0;
+
+  if (elements.toyCounter) {
+    elements.toyCounter.style.display = isToyMode ? 'inline-flex' : 'none';
+    if (elements.toyCounterText) {
+      elements.toyCounterText.textContent = `${GameState.collectedToys.length} / ${total}`;
+    }
+  }
+
+  if (elements.legendToy) {
+    elements.legendToy.style.display = isToyMode ? 'inline-flex' : 'none';
+  }
+}
+
+/**
+ * 指定座標のおもちゃを回収
+ */
+function pickupToyAt(x, y) {
+  const toyIndex = GameState.toys.findIndex(
+    t => t.x === x && t.y === y && !GameState.collectedToys.includes(t.id)
+  );
+  if (toyIndex === -1) {
+    return null; // おもちゃがない
+  }
+
+  const toy = GameState.toys[toyIndex];
+  GameState.collectedToys.push(toy.id);
+
+  // 盤面セルの見た目を更新
+  const cell = elements.gridBoard.querySelector(`.grid-cell[data-x="${x}"][data-y="${y}"]`);
+  if (cell) {
+    cell.classList.remove('toy-cell');
+    const toyItem = cell.querySelector('.toy-item');
+    if (toyItem) toyItem.remove();
+  }
+
+  // カウンターの表示更新とポップアニメーション
+  updateToyCounterDisplay();
+  if (elements.toyCounter) {
+    elements.toyCounter.classList.remove('bounce');
+    void elements.toyCounter.offsetWidth; // リフロー発生
+    elements.toyCounter.classList.add('bounce');
+  }
+
+  return toy;
 }
 
 /**
@@ -629,6 +788,8 @@ function getCommandsFromWorkspace() {
         commands.push({ type: 'TURN_RIGHT', blockId: current.id });
       } else if (current.type === 'toki_turn_left') {
         commands.push({ type: 'TURN_LEFT', blockId: current.id });
+      } else if (current.type === 'toki_pickup') {
+        commands.push({ type: 'PICKUP', blockId: current.id });
       } else if (current.type === 'toki_repeat') {
         const times = parseInt(current.getFieldValue('TIMES'), 10) || 1;
         const branchBlock = current.getInputTargetBlock('DO');
@@ -755,9 +916,14 @@ async function runProgram() {
 
         // トキが移動したマスにホムラが居たか判定
         if (GameState.x === GameState.homuraX && GameState.y === GameState.homuraY) {
-          isSuccess = true;
-          onGoalReached();
-          break;
+          if (GameState.currentMode === 'toy' && GameState.collectedToys.length < GameState.toys.length) {
+            const remaining = GameState.toys.length - GameState.collectedToys.length;
+            setMessage(`ホムラ「ぬいぐるみが まだ たりないニャ〜！(あと ${remaining}こ) あつめてきてね！」`, 'homura');
+          } else {
+            isSuccess = true;
+            onGoalReached();
+            break;
+          }
         }
 
         actionExecuted = true;
@@ -776,9 +942,32 @@ async function runProgram() {
       updateTokiPosition(true);
       setMessage('ひだりを むいたよ！ ↶', 'toki');
       actionExecuted = true;
+    } else if (cmd.type === 'PICKUP') {
+      // ぬいぐるみをひろう
+      const pickedToy = pickupToyAt(GameState.x, GameState.y);
+      if (pickedToy) {
+        setTokiMood('happy');
+        const remaining = GameState.toys.length - GameState.collectedToys.length;
+        const toyName = pickedToy.name || 'ぬいぐるみ';
+        const toyIcon = pickedToy.icon || '🦐';
+        if (remaining > 0) {
+          setMessage(`${toyName}（${toyIcon}）を ひろったよ！ (のこり: ${remaining}こ)`, 'happy');
+        } else {
+          setMessage(`${toyName}（${toyIcon}）を ひろったよ！ ぜんぶあつまった！ホムラのところへいこう！🎉`, 'happy');
+        }
+        await sleep(Math.min(350, getStepDelay()));
+        setTokiMood('normal');
+      } else {
+        // 空振り：ぬいぐるみがないマスでの実行（エラー停止せず次に進む）
+        elements.toki.classList.add('tilt-animation');
+        setMessage('あれ？ ここには ぬいぐるみが ないよ？ キョロキョロ…(・_・ )', 'toki');
+        await sleep(getStepDelay());
+        elements.toki.classList.remove('tilt-animation');
+      }
+      actionExecuted = true;
     }
 
-    // トキが命令（進む・向く）を実行するたびに動くゴールの処理（レベル3・4）
+    // トキが命令（進む・向く・ひろう）を実行するたびに動くゴールの処理（レベル3・4）
     if (actionExecuted && GameState.movingGoal) {
       await sleep(Math.min(250, Math.floor(getStepDelay() / 2)));
       if (GameState.shouldStop) break;
@@ -787,9 +976,14 @@ async function runProgram() {
 
       // ホムラがトキのいるマスに移動してきたか判定
       if (GameState.x === GameState.homuraX && GameState.y === GameState.homuraY) {
-        isSuccess = true;
-        onGoalReached();
-        break;
+        if (GameState.currentMode === 'toy' && GameState.collectedToys.length < GameState.toys.length) {
+          const remaining = GameState.toys.length - GameState.collectedToys.length;
+          setMessage(`ホムラ「ぬいぐるみが まだ たりないニャ〜！(あと ${remaining}こ) あつめてきてね！」`, 'homura');
+        } else {
+          isSuccess = true;
+          onGoalReached();
+          break;
+        }
       }
     }
 
@@ -801,10 +995,19 @@ async function runProgram() {
     workspace.highlightBlock(null);
   }
 
-  // 終了時のメッセージ（ゴール未到達時）
+  // 終了時のメッセージ（ゴール未到達時または未回収時）
   if (!isSuccess && !GameState.shouldStop) {
     setTokiMood('sad');
-    setMessage('ホムラをつかまえられなかったよ…！(＞＜) 「リセット」をおして やりなおしてね！', 'sad');
+    if (GameState.currentMode === 'toy' && GameState.collectedToys.length < GameState.toys.length) {
+      const remaining = GameState.toys.length - GameState.collectedToys.length;
+      if (GameState.x === GameState.homuraX && GameState.y === GameState.homuraY) {
+        setMessage(`ホムラ「ぬいぐるみが まだ たりないニャ〜！(あと ${remaining}こ) 「リセット」をおして やりなおしてね！」`, 'homura');
+      } else {
+        setMessage(`ぬいぐるみを ぜんぶ あつめられなかったよ…！(あと ${remaining}こ) 「リセット」をおして やりなおしてね！`, 'sad');
+      }
+    } else {
+      setMessage('ホムラをつかまえられなかったよ…！(＞＜) 「リセット」をおして やりなおしてね！', 'sad');
+    }
   }
 
   // リセットによって中断されたのでなければ、失敗時・ゴール達成時はリセットされるまで「うごかす」ボタンを無効化
@@ -822,16 +1025,18 @@ function onGoalReached() {
   elements.toki.classList.add('victory-jump');
 
   // 作成したプログラムのブロック数を取得・判定
-  const currentLevelData = LEVELS.find(l => l.id === GameState.currentLevel);
+  const currentLevelData = GameState.getCurrentLevelData();
   const minBlocks = currentLevelData ? currentLevelData.minBlocks : 0;
   const usedBlocks = countProgramBlocks();
   const isPerfect = minBlocks > 0 && usedBlocks <= minBlocks;
+  const isToyMode = GameState.currentMode === 'toy';
 
   // 吹き出しメッセージの更新
   if (isPerfect) {
     setMessage(`やったー！これ以上短くできない完璧なプログラムだよ！すごい！おめでとう！💮✨ (使ったブロック: ${usedBlocks}個)`, 'happy');
   } else {
-    setMessage(`ホムラをつかまえたよ！🎉 くりかえし等をつかうと、もっと短くできるよ！ちょうせんしてみてね！💡 (いまのブロック: ${usedBlocks}個)`, 'happy');
+    const successAction = isToyMode ? 'ぬいぐるみをあつめて ホムラにあえたよ！🎉' : 'ホムラをつかまえたよ！🎉';
+    setMessage(`${successAction} くりかえし等をつかうと、もっと短くできるよ！ちょうせんしてみてね！💡 (いまのブロック: ${usedBlocks}個)`, 'happy');
   }
 
   // モーダル内の猫アイコン表示
@@ -852,13 +1057,14 @@ function onGoalReached() {
   // モーダル内のメッセージ・評価の更新
   if (elements.victoryTitle) {
     elements.victoryTitle.textContent = isPerfect
-      ? '🌟 かんぺき！ 大せいこう！ 🌟'
-      : '🎉 タッチ！ つかまえたよ！ 🎉';
+      ? (isToyMode ? '🌟 かんぺき！ ぬいぐるみを ぜんぶ とどけたよ！ 🌟' : '🌟 かんぺき！ 大せいこう！ 🌟')
+      : (isToyMode ? '🎉 ぬいぐるみを ぜんぶ とどけたよ！ 🎉' : '🎉 タッチ！ つかまえたよ！ 🎉');
   }
   if (elements.victoryDesc) {
+    const clearDesc = isToyMode ? 'ぬいぐるみをぜんぶあつめて ホムラにあえたよ！にゃーん！🎉' : 'ホムラをつかまえたよ！にゃーん！🎉';
     elements.victoryDesc.innerHTML = isPerfect
-      ? 'ホムラをつかまえたよ！にゃーん！🎉<br><strong>これ以上 短くできない 完璧なプログラムです！</strong>'
-      : 'ホムラをつかまえたよ！にゃーん！🎉<br>おにごっこ せいこう！';
+      ? `${clearDesc}<br><strong>これ以上 短くできない 完璧なプログラムです！</strong>`
+      : `${clearDesc}<br>${isToyMode ? 'ぬいぐるみあつめ だいせいこう！' : 'おにごっこ せいこう！'}`;
   }
   if (elements.victoryEvaluation) {
     if (isPerfect) {
@@ -880,7 +1086,8 @@ function onGoalReached() {
   }
 
   // 次のレベルの存在確認
-  const nextLevel = LEVELS.find(l => l.id === GameState.currentLevel + 1);
+  const currentLevels = GameState.getCurrentLevels();
+  const nextLevel = currentLevels.find(l => l.id === GameState.currentLevel + 1);
   if (elements.modalNextBtn) {
     if (nextLevel) {
       elements.modalNextBtn.style.display = 'inline-flex';
@@ -896,6 +1103,69 @@ function onGoalReached() {
 }
 
 /**
+ * モードの切り替え (おにごっこ / おもちゃあつめ)
+ */
+function setMode(mode) {
+  if (GameState.currentMode === mode) return;
+  if (GameState.isRunning) {
+    GameState.shouldStop = true;
+  }
+
+  GameState.currentMode = mode;
+
+  // モードタブのactive切り替え
+  if (elements.modeTabs) {
+    elements.modeTabs.forEach(tab => {
+      if (tab.dataset.mode === mode) {
+        tab.classList.add('active');
+      } else {
+        tab.classList.remove('active');
+      }
+    });
+  }
+
+  // レベルボタンの再描画
+  renderLevelButtons();
+
+  // Blocklyツールボックスの切り替え
+  if (workspace) {
+    const toolboxId = mode === 'toy' ? 'toolbox-toy' : 'toolbox';
+    const toolboxEl = document.getElementById(toolboxId);
+    if (toolboxEl && typeof workspace.updateToolbox === 'function') {
+      workspace.updateToolbox(toolboxEl);
+    }
+  }
+
+  // レベル1に切り替え
+  setLevel(1);
+}
+
+/**
+ * レベルボタン一覧の動的描画
+ */
+function renderLevelButtons() {
+  if (!elements.levelButtonsContainer) return;
+  const levels = GameState.getCurrentLevels();
+  elements.levelButtonsContainer.innerHTML = '';
+
+  levels.forEach(level => {
+    const btn = document.createElement('button');
+    btn.className = `level-btn${level.id === GameState.currentLevel ? ' active' : ''}`;
+    btn.dataset.level = level.id;
+    let icon = '🌟';
+    if (GameState.currentMode === 'toy') {
+      icon = level.id === 1 ? '🦐' : '🎾';
+    } else {
+      icon = level.id === 1 ? '🌟' : level.id === 2 ? '📦' : level.id === 3 ? '🐾' : '👑';
+    }
+    btn.textContent = `${icon} ${level.name}`;
+    elements.levelButtonsContainer.appendChild(btn);
+  });
+
+  elements.levelButtons = elements.levelButtonsContainer.querySelectorAll('.level-btn');
+}
+
+/**
  * レベルの切り替え
  */
 function setLevel(levelId) {
@@ -906,18 +1176,20 @@ function setLevel(levelId) {
   GameState.loadLevel(levelId);
 
   // ボタンのactive表示更新
-  elements.levelButtons.forEach(btn => {
-    if (parseInt(btn.dataset.level, 10) === levelId) {
-      btn.classList.add('active');
-    } else {
-      btn.classList.remove('active');
-    }
-  });
+  if (elements.levelButtons) {
+    elements.levelButtons.forEach(btn => {
+      if (parseInt(btn.dataset.level, 10) === levelId) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+  }
 
   createGridBoard();
   resetGame();
 
-  const currentLevelData = LEVELS.find(l => l.id === GameState.currentLevel);
+  const currentLevelData = GameState.getCurrentLevelData();
   if (currentLevelData) {
     setMessage(currentLevelData.startMessage, 'toki');
   }
@@ -931,16 +1203,17 @@ function resetGame() {
   GameState.reset();
 
   setTokiMood('normal');
-  elements.toki.classList.remove('victory-jump', 'shake-animation');
+  elements.toki.classList.remove('victory-jump', 'shake-animation', 'tilt-animation');
   elements.victoryModal.classList.add('hidden');
   updateTokiPosition(true);
   updateGoalDisplay();
+  updateToyCounterDisplay();
 
   if (workspace) {
     workspace.highlightBlock(null);
   }
 
-  const currentLevelData = LEVELS.find(l => l.id === GameState.currentLevel);
+  const currentLevelData = GameState.getCurrentLevelData();
   const msg = currentLevelData ? currentLevelData.startMessage : 'スタートちてんに もどったよ！「うごかす！」をおしてね。';
   setMessage(msg, 'toki');
   elements.runBtn.disabled = false;
@@ -961,7 +1234,8 @@ function setupEventListeners() {
   if (elements.modalNextBtn) {
     elements.modalNextBtn.addEventListener('click', () => {
       elements.victoryModal.classList.add('hidden');
-      const nextLevel = LEVELS.find(l => l.id === GameState.currentLevel + 1);
+      const currentLevels = GameState.getCurrentLevels();
+      const nextLevel = currentLevels.find(l => l.id === GameState.currentLevel + 1);
       if (nextLevel) {
         setLevel(nextLevel.id);
       } else {
@@ -970,15 +1244,29 @@ function setupEventListeners() {
     });
   }
 
-  // レベル切り替えボタン
-  elements.levelButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
+  // レベル切り替えボタン（コンテナへのイベント委譲）
+  if (elements.levelButtonsContainer) {
+    elements.levelButtonsContainer.addEventListener('click', (e) => {
+      const btn = e.target.closest('.level-btn');
+      if (!btn) return;
       const levelId = parseInt(btn.dataset.level, 10);
       if (levelId && levelId !== GameState.currentLevel) {
         setLevel(levelId);
       }
     });
-  });
+  }
+
+  // モード切り替えタブ
+  if (elements.modeTabs) {
+    elements.modeTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const mode = tab.dataset.mode;
+        if (mode && mode !== GameState.currentMode) {
+          setMode(mode);
+        }
+      });
+    });
+  }
 }
 
 // 起動時初期化
