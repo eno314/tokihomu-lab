@@ -55,6 +55,14 @@
           </div>
         </div>
 
+        <!-- モード選択タブ（おにごっこ / おもちゃあつめ） -->
+        <div class="mode-select-card">
+          <div class="mode-tabs" id="mode-tabs">
+            <button class="mode-tab active" data-mode="chase">🐾 おにごっこ</button>
+            <button class="mode-tab" data-mode="toy">🧸 おもちゃあつめ</button>
+          </div>
+        </div>
+
         <!-- レベル選択タブ/ボタン -->
         <div class="level-select-card">
           <span class="level-label">もんだい：</span>
@@ -107,7 +115,12 @@
           <div class="board-legend" id="board-legend">
             <span class="legend-item">🚩 スタート: トキ (🐾)</span>
             <span class="legend-item">🎯 ゴール: ホムラ (🐈)</span>
+            <span class="legend-item legend-toy" id="legend-toy" style="display: none;">🧸 おもちゃ</span>
             <span class="legend-item legend-obstacle" id="legend-obstacle" style="display: none;">📦 ダンボール</span>
+            <span class="toy-counter-badge" id="toy-counter" style="display: none;">
+              <span class="toy-counter-icon">🧸</span>
+              <span class="toy-counter-text" id="toy-counter-text">0 / 0</span>
+            </span>
           </div>
 
           <div class="grid-wrapper">
@@ -182,11 +195,29 @@
   </div>
 
   <!-- Blockly ツールボックス定義 (XML) -->
+  <!-- おにごっこモード用 -->
   <xml id="toolbox" style="display: none">
     <category name="🐾 うごき" colour="#ff9800">
       <block type="toki_move"></block>
       <block type="toki_turn_right"></block>
       <block type="toki_turn_left"></block>
+    </category>
+    <category name="🔁 くりかえし" colour="#4caf50">
+      <block type="toki_repeat">
+        <field name="TIMES">2</field>
+      </block>
+    </category>
+  </xml>
+
+  <!-- おもちゃあつめモード用 -->
+  <xml id="toolbox-toy" style="display: none">
+    <category name="🐾 うごき" colour="#ff9800">
+      <block type="toki_move"></block>
+      <block type="toki_turn_right"></block>
+      <block type="toki_turn_left"></block>
+    </category>
+    <category name="✋ アクション" colour="#e91e63">
+      <block type="toki_pickup"></block>
     </category>
     <category name="🔁 くりかえし" colour="#4caf50">
       <block type="toki_repeat">
