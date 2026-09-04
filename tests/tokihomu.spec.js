@@ -153,9 +153,16 @@ test.describe('tokihomu-lab (ときほむラボ) UIテスト', () => {
     await expect(page.locator('#toy-counter-text')).toHaveText('0 / 1');
     await expect(page.locator('#legend-toy')).toBeVisible();
 
-    // 盤面におもちゃセル（1個）が存在する
+    // 盤面におもちゃセル（1個、真ん中: 2, 2）が存在する
     const toyCells = page.locator('.toy-cell');
     await expect(toyCells).toHaveCount(1);
+    await expect(toyCells.first()).toHaveAttribute('data-x', '2');
+    await expect(toyCells.first()).toHaveAttribute('data-y', '2');
+
+    // ゴールが右下 (4, 4) に存在すること
+    const goalCell = page.locator('.goal-cell');
+    await expect(goalCell).toHaveAttribute('data-x', '4');
+    await expect(goalCell).toHaveAttribute('data-y', '4');
 
     // レベルボタンがおもちゃモード用（レベル1, 2）になる
     const levelBtns = page.locator('.level-btn');
@@ -180,16 +187,16 @@ test.describe('tokihomu-lab (ときほむラボ) UIテスト', () => {
 
   test('おもちゃあつめモード: 空振り時にエラー停止せず注意喚起メッセージが表示されること', async ({ page }) => {
     // おもちゃあつめモードに切り替え
-    await page.locator('.mode-tab[data-mode="toy"]').click();
+    const toyTab = page.locator('.mode-tab[data-mode="toy"]');
+    await toyTab.click();
     await page.selectOption('#speed-select', '250');
 
-    // スタート地点（0, 0: おもちゃなし）で「おもちゃを ひろう」ブロックを配置
+    // スタート地点（0, 0: おもちゃなし）で「ぬいぐるみを ひろう」ブロックを配置
     await page.evaluate(() => {
       workspace.clear();
       const pickupBlock = workspace.newBlock('toki_pickup');
       pickupBlock.initSvg();
       pickupBlock.render();
-      pickupBlock.moveTo(new Blockly.utils.Coordinate(30, 30));
     });
 
     await page.locator('#run-btn').click();
@@ -200,24 +207,22 @@ test.describe('tokihomu-lab (ときほむラボ) UIテスト', () => {
   });
 
   test('おもちゃあつめモード: おもちゃ未回収のままホムラに到達してもクリアにならないこと', async ({ page }) => {
-    // おもちゃあつめモードに切り替え（レベル1: トキ(0,0), おもちゃ(2,0), ホムラ(4,0)）
+    // おもちゃあつめモードに切り替え（レベル1: トキ(0,0), おもちゃ(2,2), ホムラ(4,4)）
     await page.locator('.mode-tab[data-mode="toy"]').click();
     await page.selectOption('#speed-select', '250');
 
-    // おもちゃを拾わずに前進×4でホムラに直行するプログラムを配置
+    // おもちゃを拾わずにホムラに到達するプログラムを配置（外周を通る: 前進×4、右向く、前進×4）
     await page.evaluate(() => {
       workspace.clear();
-      const b1 = workspace.newBlock('toki_move');
-      const b2 = workspace.newBlock('toki_move');
-      const b3 = workspace.newBlock('toki_move');
-      const b4 = workspace.newBlock('toki_move');
-      b1.nextConnection.connect(b2.previousConnection);
-      b2.nextConnection.connect(b3.previousConnection);
-      b3.nextConnection.connect(b4.previousConnection);
-      b1.initSvg(); b1.render();
-      b2.initSvg(); b2.render();
-      b3.initSvg(); b3.render();
-      b4.initSvg(); b4.render();
+      const blocks = [];
+      for (let i = 0; i < 4; i++) blocks.push(workspace.newBlock('toki_move'));
+      blocks.push(workspace.newBlock('toki_turn_right'));
+      for (let i = 0; i < 4; i++) blocks.push(workspace.newBlock('toki_move'));
+
+      for (let i = 0; i < blocks.length - 1; i++) {
+        blocks[i].nextConnection.connect(blocks[i + 1].previousConnection);
+      }
+      blocks.forEach(b => { b.initSvg(); b.render(); });
     });
 
     await page.locator('#run-btn').click();
@@ -229,25 +234,27 @@ test.describe('tokihomu-lab (ときほむラボ) UIテスト', () => {
   });
 
   test('おもちゃあつめモード: おもちゃを回収してからホムラに到達するとクリアできること', async ({ page }) => {
-    // おもちゃあつめモードに切り替え（レベル1: トキ(0,0), おもちゃ(2,0), ホムラ(4,0)）
+    // おもちゃあつめモードに切り替え（レベル1: トキ(0,0), おもちゃ(2,2), ホムラ(4,4)）
     await page.locator('.mode-tab[data-mode="toy"]').click();
     await page.selectOption('#speed-select', '250');
 
-    // 前進×2 → ひろう → 前進×2
+    // 前進×2 → 右向く → 前進×2 → ひろう → 前進×2 → 左向く → 前進×2
     await page.evaluate(() => {
       workspace.clear();
-      const m1 = workspace.newBlock('toki_move');
-      const m2 = workspace.newBlock('toki_move');
-      const p = workspace.newBlock('toki_pickup');
-      const m3 = workspace.newBlock('toki_move');
-      const m4 = workspace.newBlock('toki_move');
-
-      m1.nextConnection.connect(m2.previousConnection);
-      m2.nextConnection.connect(p.previousConnection);
-      p.nextConnection.connect(m3.previousConnection);
-      m3.nextConnection.connect(m4.previousConnection);
-
-      [m1, m2, p, m3, m4].forEach(b => { b.initSvg(); b.render(); });
+      const blockTypes = [
+        'toki_move', 'toki_move',
+        'toki_turn_right',
+        'toki_move', 'toki_move',
+        'toki_pickup',
+        'toki_move', 'toki_move',
+        'toki_turn_left',
+        'toki_move', 'toki_move'
+      ];
+      const blocks = blockTypes.map(t => workspace.newBlock(t));
+      for (let i = 0; i < blocks.length - 1; i++) {
+        blocks[i].nextConnection.connect(blocks[i + 1].previousConnection);
+      }
+      blocks.forEach(b => { b.initSvg(); b.render(); });
     });
 
     await page.locator('#run-btn').click();

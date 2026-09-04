@@ -104,13 +104,13 @@ const LEVELS_TOY = [
     startDirection: 1,
     startRotation: 90,
     goalX: 4,
-    goalY: 0,
+    goalY: 4,
     obstacles: [],
     toys: [
-      { id: 'toy-1', x: 2, y: 0, icon: '🦐', name: 'エビのぬいぐるみ' }
+      { id: 'toy-1', x: 2, y: 2, icon: '🦐', name: 'エビのぬいぐるみ' }
     ],
-    startMessage: 'みちに エビのぬいぐるみが あるよ！「ひろう」ブロックをつかって ひろってから ホムラのところへいこう！',
-    minBlocks: 5
+    startMessage: 'まんなかに エビのぬいぐるみが あるよ！「ひろう」ブロックをつかって ひろってから みぎしたの ホムラのところへいこう！',
+    minBlocks: 11
   },
   {
     id: 2,
@@ -995,12 +995,16 @@ async function runProgram() {
     workspace.highlightBlock(null);
   }
 
-  // 終了時のメッセージ（ゴール未到達時）
+  // 終了時のメッセージ（ゴール未到達時または未回収時）
   if (!isSuccess && !GameState.shouldStop) {
     setTokiMood('sad');
     if (GameState.currentMode === 'toy' && GameState.collectedToys.length < GameState.toys.length) {
       const remaining = GameState.toys.length - GameState.collectedToys.length;
-      setMessage(`ぬいぐるみを ぜんぶ あつめられなかったよ…！(あと ${remaining}こ) 「リセット」をおして やりなおしてね！`, 'sad');
+      if (GameState.x === GameState.homuraX && GameState.y === GameState.homuraY) {
+        setMessage(`ホムラ「ぬいぐるみが まだ たりないニャ〜！(あと ${remaining}こ) 「リセット」をおして やりなおしてね！」`, 'homura');
+      } else {
+        setMessage(`ぬいぐるみを ぜんぶ あつめられなかったよ…！(あと ${remaining}こ) 「リセット」をおして やりなおしてね！`, 'sad');
+      }
     } else {
       setMessage('ホムラをつかまえられなかったよ…！(＞＜) 「リセット」をおして やりなおしてね！', 'sad');
     }
