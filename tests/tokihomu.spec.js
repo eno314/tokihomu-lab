@@ -267,4 +267,50 @@ test.describe('tokihomu-lab (ときほむラボ) UIテスト', () => {
     await expect(victoryModal).not.toHaveClass(/hidden/, { timeout: 10000 });
     await expect(page.locator('#victory-title')).toContainText('ぬいぐるみを ぜんぶ とどけたよ');
   });
+
+  test('おもちゃあつめモード: ぬいぐるみを拾った後にリセットするとぬいぐるみが盤面に復活すること', async ({ page }) => {
+    // おもちゃあつめモードに切り替え
+    const toyTab = page.locator('.mode-tab[data-mode="toy"]');
+    await toyTab.click();
+    await page.selectOption('#speed-select', '250');
+
+    // 初期状態: おもちゃセルが1個 (2, 2)、カウンターは 0 / 1
+    await expect(page.locator('.toy-cell')).toHaveCount(1);
+    await expect(page.locator('#toy-counter-text')).toHaveText('0 / 1');
+
+    // トキが(2, 2)に移動してぬいぐるみを拾うプログラムを配置（前進×2 → 右向く → 前進×2 → ひろう）
+    await page.evaluate(() => {
+      workspace.clear();
+      const blockTypes = [
+        'toki_move', 'toki_move',
+        'toki_turn_right',
+        'toki_move', 'toki_move',
+        'toki_pickup'
+      ];
+      const blocks = blockTypes.map(t => workspace.newBlock(t));
+      for (let i = 0; i < blocks.length - 1; i++) {
+        blocks[i].nextConnection.connect(blocks[i + 1].previousConnection);
+      }
+      blocks.forEach(b => { b.initSvg(); b.render(); });
+    });
+
+    // 実行しておもちゃを拾う
+    await page.locator('#run-btn').click();
+    await expect(page.locator('#toy-counter-text')).toHaveText('1 / 1', { timeout: 10000 });
+    // 盤面のおもちゃセルが消える
+    await expect(page.locator('.toy-cell')).toHaveCount(0);
+
+    // リセットボタンをクリック
+    await page.locator('#reset-btn').click();
+
+    // リセット後: ぬいぐるみが盤面 (2, 2) に復活していること
+    await expect(page.locator('.toy-cell')).toHaveCount(1);
+    const toyCell = page.locator('.toy-cell');
+    await expect(toyCell).toHaveAttribute('data-x', '2');
+    await expect(toyCell).toHaveAttribute('data-y', '2');
+    await expect(toyCell.locator('.toy-item')).toBeVisible();
+
+    // カウンターも 0 / 1 にリセットされていること
+    await expect(page.locator('#toy-counter-text')).toHaveText('0 / 1');
+  });
 });
