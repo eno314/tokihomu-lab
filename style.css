@@ -485,7 +485,8 @@ body {
   padding-top: 4px;
 }
 
-.homura-avatar {
+.homura-avatar,
+.toki-avatar {
   width: 44px;
   height: 44px;
   display: flex;
@@ -495,7 +496,8 @@ body {
   transition: transform 0.25s ease;
 }
 
-.homura-svg {
+.homura-svg,
+.toki-avatar .toki-svg {
   width: 100%;
   height: 100%;
   display: block;
@@ -638,7 +640,8 @@ body {
   filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.35));
 }
 
-.character-inner .toki-svg {
+.character-inner .toki-svg,
+.character-inner .homura-svg {
   width: 100%;
   height: 100%;
   display: block;

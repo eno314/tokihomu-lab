@@ -164,6 +164,12 @@ test.describe('tokihomu-lab (ときほむラボ) UIテスト', () => {
     await expect(goalCell).toHaveAttribute('data-x', '4');
     await expect(goalCell).toHaveAttribute('data-y', '4');
 
+    // ぬいぐるみあつめモードでは操作キャラがホムラ、ゴールがトキになること
+    await expect(page.locator('#toki-character .homura-svg')).toBeVisible();
+    await expect(page.locator('.goal-cell .toki-avatar')).toBeVisible();
+    await expect(page.locator('#legend-start')).toHaveText('🚩 スタート: ホムラ (🐈)');
+    await expect(page.locator('#legend-goal')).toHaveText('🎯 ゴール: トキ (🐾)');
+
     // レベルボタンがおもちゃモード用（レベル1, 2）になる
     const levelBtns = page.locator('.level-btn');
     await expect(levelBtns).toHaveCount(2);
@@ -183,6 +189,12 @@ test.describe('tokihomu-lab (ときほむラボ) UIテスト', () => {
     await expect(page.locator('#legend-toy')).not.toBeVisible();
     await expect(page.locator('.toy-cell')).toHaveCount(0);
     await expect(page.locator('.level-btn')).toHaveCount(4);
+
+    // おにごっこモードに戻すと操作キャラがトキ、ゴールがホムラになること
+    await expect(page.locator('#toki-character .toki-svg')).toBeVisible();
+    await expect(page.locator('.goal-cell .homura-avatar')).toBeVisible();
+    await expect(page.locator('#legend-start')).toHaveText('🚩 スタート: トキ (🐾)');
+    await expect(page.locator('#legend-goal')).toHaveText('🎯 ゴール: ホムラ (🐈)');
   });
 
   test('おもちゃあつめモード: 空振り時にエラー停止せず注意喚起メッセージが表示されること', async ({ page }) => {
@@ -206,12 +218,12 @@ test.describe('tokihomu-lab (ときほむラボ) UIテスト', () => {
     await expect(statusMsg).toContainText('ここには ぬいぐるみが ないよ', { timeout: 5000 });
   });
 
-  test('おもちゃあつめモード: おもちゃ未回収のままホムラに到達してもクリアにならないこと', async ({ page }) => {
-    // おもちゃあつめモードに切り替え（レベル1: トキ(0,0), おもちゃ(2,2), ホムラ(4,4)）
+  test('おもちゃあつめモード: ぬいぐるみ未回収のままトキに到達してもクリアにならないこと', async ({ page }) => {
+    // おもちゃあつめモードに切り替え（レベル1: ホムラ(0,0), ぬいぐるみ(2,2), トキ(4,4)）
     await page.locator('.mode-tab[data-mode="toy"]').click();
     await page.selectOption('#speed-select', '250');
 
-    // おもちゃを拾わずにホムラに到達するプログラムを配置（外周を通る: 前進×4、右向く、前進×4）
+    // ぬいぐるみを拾わずにトキに到達するプログラムを配置（外周を通る: 前進×4、右向く、前進×4）
     await page.evaluate(() => {
       workspace.clear();
       const blocks = [];
@@ -227,14 +239,15 @@ test.describe('tokihomu-lab (ときほむラボ) UIテスト', () => {
 
     await page.locator('#run-btn').click();
 
-    // ホムラが「ぬいぐるみが まだ たりない」と注意し、ゴールモーダルは表示されない
+    // トキが「ぬいぐるみが まだ たりない」と注意し、ゴールモーダルは表示されない
     const statusMsg = page.locator('#status-message');
     await expect(statusMsg).toContainText('ぬいぐるみが まだ たりない', { timeout: 10000 });
+    await expect(statusMsg).toContainText('トキ「ぬいぐるみが まだ たりない', { timeout: 10000 });
     await expect(page.locator('#victory-modal')).toHaveClass(/hidden/);
   });
 
-  test('おもちゃあつめモード: おもちゃを回収してからホムラに到達するとクリアできること', async ({ page }) => {
-    // おもちゃあつめモードに切り替え（レベル1: トキ(0,0), おもちゃ(2,2), ホムラ(4,4)）
+  test('おもちゃあつめモード: ぬいぐるみを回収してからトキに到達するとクリアできること', async ({ page }) => {
+    // おもちゃあつめモードに切り替え（レベル1: ホムラ(0,0), ぬいぐるみ(2,2), トキ(4,4)）
     await page.locator('.mode-tab[data-mode="toy"]').click();
     await page.selectOption('#speed-select', '250');
 
