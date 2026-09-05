@@ -97,7 +97,7 @@ const LEVELS_TOY = [
     id: 1,
     name: 'レベル 1',
     title: 'エビの ぬいぐるみ',
-    description: 'エビの ぬいぐるみを ひろってから、ホムラにあいにいこう！',
+    description: 'エビの ぬいぐるみを ひろってから、トキにあいにいこう！',
     gridSize: 5,
     startX: 0,
     startY: 0,
@@ -109,14 +109,14 @@ const LEVELS_TOY = [
     toys: [
       { id: 'toy-1', x: 2, y: 2, icon: '🦐', name: 'エビのぬいぐるみ' }
     ],
-    startMessage: 'まんなかに エビのぬいぐるみが あるよ！「ひろう」ブロックをつかって ひろってから みぎしたの ホムラのところへいこう！',
+    startMessage: 'まんなかに エビのぬいぐるみが あるよ！「ひろう」ブロックをつかって ひろってから みぎしたの トキのところへいこう！',
     minBlocks: 11
   },
   {
     id: 2,
     name: 'レベル 2',
     title: 'エビと ボール',
-    description: 'ダンボールを よけながら、エビと ボールの ぬいぐるみを あつめて ホムラにあいにいこう！',
+    description: 'ダンボールを よけながら、エビと ボールの ぬいぐるみを あつめて トキにあいにいこう！',
     gridSize: 5,
     startX: 0,
     startY: 0,
@@ -133,7 +133,7 @@ const LEVELS_TOY = [
       { id: 'toy-1', x: 2, y: 0, icon: '🦐', name: 'エビのぬいぐるみ' },
       { id: 'toy-2', x: 2, y: 4, icon: '🎾', name: 'ボールのぬいぐるみ' }
     ],
-    startMessage: 'エビと ボールの ぬいぐるみが あるよ！ ダンボールをよけて ぜんぶひろってから ホムラに あいにいこう！',
+    startMessage: 'エビと ボールの ぬいぐるみが あるよ！ ダンボールをよけて ぜんぶひろってから トキに あいにいこう！',
     minBlocks: 11
   }
 ];
@@ -355,6 +355,94 @@ const HOMURA_SVG = `
 </svg>
 `;
 
+// クリーム色の長毛猫「ホムラ」の困り顔SVG定数（壁衝突・失敗時用）
+const HOMURA_SAD_SVG = `
+<svg class="homura-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- ふわふわファー（襟巻き・長毛の毛並み） -->
+  <path d="M 18,70 C 8,76 12,88 24,86 C 20,93 32,95 42,91 C 48,96 56,96 62,91 C 70,95 82,92 78,85 C 88,86 92,76 82,70 C 90,62 82,52 82,52 C 90,42 78,34 78,34 C 84,22 70,16 62,24 C 52,16 42,20 40,24 C 32,16 18,22 24,34 C 12,40 20,52 20,52 C 10,60 18,70 18,70 Z" fill="#ffe082" />
+  <!-- ふわふわ耳（外側・クリームベージュ） -->
+  <polygon points="22,42 12,12 40,24" fill="#ffca28" />
+  <polygon points="78,42 88,12 60,24" fill="#ffca28" />
+  <!-- 耳（内側・やわらかピンク） -->
+  <polygon points="24,36 18,18 36,25" fill="#ffccbc" />
+  <polygon points="76,36 82,18 64,25" fill="#ffccbc" />
+  <!-- 長毛特有のふさふさ飾り耳毛（淡いクリーム） -->
+  <path d="M 18,28 Q 28,24 32,32 Q 22,34 18,28 Z" fill="#fffde7" />
+  <path d="M 82,28 Q 72,24 68,32 Q 78,34 82,28 Z" fill="#fffde7" />
+  <!-- 顔ベース（やわらかいクリームミルク色） -->
+  <ellipse cx="50" cy="54" rx="36" ry="31" fill="#fff8e1" />
+  <!-- ほっぺのふんわり飾り毛 -->
+  <path d="M 16,56 C 10,62 16,72 26,70 C 18,76 26,82 34,78" fill="#ffe082" opacity="0.6" />
+  <path d="M 84,56 C 90,62 84,72 74,70 C 82,76 74,82 66,78" fill="#ffe082" opacity="0.6" />
+  <!-- 額のふんわり模様（淡いミルクティー色） -->
+  <path d="M 38,28 Q 50,38 62,28 Q 50,33 38,28 Z" fill="#ffe082" />
+  <ellipse cx="50" cy="36" rx="4" ry="7" fill="#ffe082" opacity="0.7" />
+  <!-- ＞ ＜ の困り目 -->
+  <path d="M 27,47 L 37,52 L 27,57" fill="none" stroke="#01579b" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M 73,47 L 63,52 L 73,57" fill="none" stroke="#01579b" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- なみだのしずく -->
+  <path d="M 22,63 Q 20,69 23,71 Q 26,71 25,67 Z" fill="#29b6f6" />
+  <!-- ほんのりピンクのほっぺ -->
+  <circle cx="26" cy="58" r="5" fill="#ffab91" opacity="0.5" />
+  <circle cx="74" cy="58" r="5" fill="#ffab91" opacity="0.5" />
+  <!-- 鼻（ピンク） -->
+  <polygon points="47,59 53,59 50,63" fill="#ff8a80" />
+  <!-- 口（への字） -->
+  <path d="M 45,67 Q 50,63 55,67" fill="none" stroke="#8d6e63" stroke-width="2" stroke-linecap="round" />
+  <!-- ふわふわヒゲ（左右） -->
+  <line x1="28" y1="62" x2="10" y2="60" stroke="#bcaaa4" stroke-width="1.5" stroke-linecap="round" />
+  <line x1="28" y1="67" x2="12" y2="71" stroke="#bcaaa4" stroke-width="1.5" stroke-linecap="round" />
+  <line x1="72" y1="62" x2="90" y2="60" stroke="#bcaaa4" stroke-width="1.5" stroke-linecap="round" />
+  <line x1="72" y1="67" x2="88" y2="71" stroke="#bcaaa4" stroke-width="1.5" stroke-linecap="round" />
+  <!-- 水色の首輪リボン -->
+  <path d="M 32,82 Q 50,89 68,82" fill="none" stroke="#29b6f6" stroke-width="3.5" stroke-linecap="round" />
+  <circle cx="50" cy="86" r="4" fill="#0288d1" />
+</svg>
+`;
+
+// クリーム色の長毛猫「ホムラ」の笑顔SVG定数（アイテム獲得・クリア時用）
+const HOMURA_HAPPY_SVG = `
+<svg class="homura-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- ふわふわファー（襟巻き・長毛の毛並み） -->
+  <path d="M 18,70 C 8,76 12,88 24,86 C 20,93 32,95 42,91 C 48,96 56,96 62,91 C 70,95 82,92 78,85 C 88,86 92,76 82,70 C 90,62 82,52 82,52 C 90,42 78,34 78,34 C 84,22 70,16 62,24 C 52,16 42,20 40,24 C 32,16 18,22 24,34 C 12,40 20,52 20,52 C 10,60 18,70 18,70 Z" fill="#ffe082" />
+  <!-- ふわふわ耳（外側・クリームベージュ） -->
+  <polygon points="22,42 12,12 40,24" fill="#ffca28" />
+  <polygon points="78,42 88,12 60,24" fill="#ffca28" />
+  <!-- 耳（内側・やわらかピンク） -->
+  <polygon points="24,36 18,18 36,25" fill="#ffccbc" />
+  <polygon points="76,36 82,18 64,25" fill="#ffccbc" />
+  <!-- 長毛特有のふさふさ飾り耳毛（淡いクリーム） -->
+  <path d="M 18,28 Q 28,24 32,32 Q 22,34 18,28 Z" fill="#fffde7" />
+  <path d="M 82,28 Q 72,24 68,32 Q 78,34 82,28 Z" fill="#fffde7" />
+  <!-- 顔ベース（やわらかいクリームミルク色） -->
+  <ellipse cx="50" cy="54" rx="36" ry="31" fill="#fff8e1" />
+  <!-- ほっぺのふんわり飾り毛 -->
+  <path d="M 16,56 C 10,62 16,72 26,70 C 18,76 26,82 34,78" fill="#ffe082" opacity="0.6" />
+  <path d="M 84,56 C 90,62 84,72 74,70 C 82,76 74,82 66,78" fill="#ffe082" opacity="0.6" />
+  <!-- 額のふんわり模様（淡いミルクティー色） -->
+  <path d="M 38,28 Q 50,38 62,28 Q 50,33 38,28 Z" fill="#ffe082" />
+  <ellipse cx="50" cy="36" rx="4" ry="7" fill="#ffe082" opacity="0.7" />
+  <!-- にっこり目 (⌒ ⌒) -->
+  <path d="M 27,52 Q 34,43 41,52" fill="none" stroke="#5d4037" stroke-width="3.5" stroke-linecap="round" />
+  <path d="M 59,52 Q 66,43 73,52" fill="none" stroke="#5d4037" stroke-width="3.5" stroke-linecap="round" />
+  <!-- ほんのりピンクのほっぺ -->
+  <circle cx="26" cy="58" r="5" fill="#ffab91" opacity="0.6" />
+  <circle cx="74" cy="58" r="5" fill="#ffab91" opacity="0.6" />
+  <!-- 鼻（ピンク） -->
+  <polygon points="47,59 53,59 50,63" fill="#ff8a80" />
+  <!-- 口（にっこり） -->
+  <path d="M 44,65 Q 47,70 50,65 Q 53,70 56,65" fill="none" stroke="#8d6e63" stroke-width="2" stroke-linecap="round" />
+  <!-- ふわふわヒゲ（左右） -->
+  <line x1="28" y1="62" x2="10" y2="60" stroke="#bcaaa4" stroke-width="1.5" stroke-linecap="round" />
+  <line x1="28" y1="67" x2="12" y2="71" stroke="#bcaaa4" stroke-width="1.5" stroke-linecap="round" />
+  <line x1="72" y1="62" x2="90" y2="60" stroke="#bcaaa4" stroke-width="1.5" stroke-linecap="round" />
+  <line x1="72" y1="67" x2="88" y2="71" stroke="#bcaaa4" stroke-width="1.5" stroke-linecap="round" />
+  <!-- 水色の首輪リボン -->
+  <path d="M 32,82 Q 50,89 68,82" fill="none" stroke="#29b6f6" stroke-width="3.5" stroke-linecap="round" />
+  <circle cx="50" cy="86" r="4" fill="#0288d1" />
+</svg>
+`;
+
 // DOM要素の参照
 const elements = {
   gridBoard: document.getElementById('grid-board'),
@@ -372,6 +460,8 @@ const elements = {
   modalCatsContainer: document.getElementById('modal-cats-container'),
   modalNextBtn: document.getElementById('modal-next-btn'),
   modalCloseBtn: document.getElementById('modal-close-btn'),
+  legendStart: document.getElementById('legend-start'),
+  legendGoal: document.getElementById('legend-goal'),
   legendObstacle: document.getElementById('legend-obstacle'),
   legendToy: document.getElementById('legend-toy'),
   toyCounter: document.getElementById('toy-counter'),
@@ -387,8 +477,12 @@ let workspace = null;
 /**
  * 1. Blockly の初期化とカスタムブロック定義
  */
-function initBlockly() {
+function initBlockly(retries = 30) {
   if (typeof Blockly === 'undefined') {
+    if (retries > 0) {
+      setTimeout(() => initBlockly(retries - 1), 200);
+      return;
+    }
     console.error('Blockly が読み込まれていません。CDN接続を確認してください。');
     setMessage('Blocklyの読み込みにしっぱいしました。ネット接続をかくにんしてね。');
     return;
@@ -671,7 +765,7 @@ function pickupToyAt(x, y) {
 }
 
 /**
- * ゴール（ホムラ）の盤面表示更新
+ * ゴール（ホムラ／トキ）の盤面表示更新
  */
 function updateGoalDisplay() {
   // 全セルからゴール表示をクリア
@@ -684,9 +778,13 @@ function updateGoalDisplay() {
     if (items) items.remove();
   });
 
-  // 現在のホムラ座標のセルを取得
+  const isToyMode = GameState.currentMode === 'toy';
+  const goalX = isToyMode ? GameState.goalX : GameState.homuraX;
+  const goalY = isToyMode ? GameState.goalY : GameState.homuraY;
+
+  // 現在のゴール座標のセルを取得
   const targetCell = elements.gridBoard.querySelector(
-    `.grid-cell[data-x="${GameState.homuraX}"][data-y="${GameState.homuraY}"]`
+    `.grid-cell[data-x="${goalX}"][data-y="${goalY}"]`
   );
 
   if (targetCell) {
@@ -699,13 +797,23 @@ function updateGoalDisplay() {
 
     const goalItems = document.createElement('div');
     goalItems.className = 'goal-items';
-    // 向きに応じてホムラの向きを反映（1: 右向きなら反転、-1: 左向きなら通常）
-    const flipStyle = GameState.homuraDir === 1 ? 'transform: scaleX(-1);' : '';
-    goalItems.innerHTML = `
-      <div class="homura-avatar" style="${flipStyle}">
-        ${HOMURA_SVG}
-      </div>
-    `;
+
+    if (isToyMode) {
+      // ぬいぐるみあつめモード: ゴールはトキ
+      goalItems.innerHTML = `
+        <div class="toki-avatar">
+          ${TOKI_SVG}
+        </div>
+      `;
+    } else {
+      // おにごっこモード: ゴールはホムラ
+      const flipStyle = GameState.homuraDir === 1 ? 'transform: scaleX(-1);' : '';
+      goalItems.innerHTML = `
+        <div class="homura-avatar" style="${flipStyle}">
+          ${HOMURA_SVG}
+        </div>
+      `;
+    }
     targetCell.appendChild(goalItems);
   }
 }
@@ -733,7 +841,7 @@ function moveHomura() {
 }
 
 /**
- * トキの画面位置・向きの更新
+ * 操作キャラクター（トキ／ホムラ）の画面位置・向きの更新
  */
 function updateTokiPosition(animate = true) {
   const cellSize = elements.gridBoard.clientWidth / GameState.GRID_SIZE;
@@ -756,35 +864,53 @@ function updateTokiPosition(animate = true) {
 }
 
 /**
- * トキの表情・状態の更新
+ * 操作キャラクターの表情・状態の更新
  * mood: 'normal' | 'sad' | 'happy'
  */
-function setTokiMood(mood = 'normal') {
+function setPlayerMood(mood = 'normal') {
   if (!elements.tokiInner) return;
-  if (mood === 'sad') {
-    elements.tokiInner.innerHTML = TOKI_SAD_SVG;
-  } else if (mood === 'happy') {
-    elements.tokiInner.innerHTML = TOKI_HAPPY_SVG;
+  const isToyMode = GameState.currentMode === 'toy';
+  if (isToyMode) {
+    if (mood === 'sad') {
+      elements.tokiInner.innerHTML = HOMURA_SAD_SVG;
+    } else if (mood === 'happy') {
+      elements.tokiInner.innerHTML = HOMURA_HAPPY_SVG;
+    } else {
+      elements.tokiInner.innerHTML = HOMURA_SVG;
+    }
   } else {
-    elements.tokiInner.innerHTML = TOKI_SVG;
+    if (mood === 'sad') {
+      elements.tokiInner.innerHTML = TOKI_SAD_SVG;
+    } else if (mood === 'happy') {
+      elements.tokiInner.innerHTML = TOKI_HAPPY_SVG;
+    } else {
+      elements.tokiInner.innerHTML = TOKI_SVG;
+    }
   }
 }
+const setTokiMood = setPlayerMood;
 
 /**
  * 吹き出しメッセージの更新
  */
-function setMessage(text, speaker = 'toki') {
+function setMessage(text, speaker = 'auto') {
   elements.statusMessage.textContent = text;
   if (!elements.speakerAvatar) return;
 
-  if (speaker === 'toki' || speaker === '🐱' || speaker === 'normal') {
+  const isToyMode = GameState.currentMode === 'toy';
+
+  if (speaker === 'toki') {
     elements.speakerAvatar.innerHTML = TOKI_SVG;
-  } else if (speaker === 'sad' || speaker === '😿') {
-    elements.speakerAvatar.innerHTML = TOKI_SAD_SVG;
-  } else if (speaker === 'happy' || speaker === '😸') {
-    elements.speakerAvatar.innerHTML = TOKI_HAPPY_SVG;
-  } else if (speaker === 'homura' || speaker === '🐈') {
+  } else if (speaker === 'homura') {
     elements.speakerAvatar.innerHTML = HOMURA_SVG;
+  } else if (speaker === 'sad' || speaker === '😿') {
+    elements.speakerAvatar.innerHTML = isToyMode ? HOMURA_SAD_SVG : TOKI_SAD_SVG;
+  } else if (speaker === 'happy' || speaker === '😸') {
+    elements.speakerAvatar.innerHTML = isToyMode ? HOMURA_HAPPY_SVG : TOKI_HAPPY_SVG;
+  } else if (speaker === 'player' || speaker === 'auto' || speaker === 'normal' || speaker === '🐱') {
+    elements.speakerAvatar.innerHTML = isToyMode ? HOMURA_SVG : TOKI_SVG;
+  } else if (speaker === 'goal') {
+    elements.speakerAvatar.innerHTML = isToyMode ? TOKI_SVG : HOMURA_SVG;
   } else {
     elements.speakerAvatar.textContent = speaker;
   }
@@ -884,9 +1010,10 @@ async function runProgram() {
   GameState.isRunning = true;
   GameState.shouldStop = false;
   elements.runBtn.disabled = true;
-  setTokiMood('normal');
+  setPlayerMood('normal');
   elements.toki.classList.remove('victory-jump', 'shake-animation');
-  setMessage('出発進行！にゃ〜ん！🐾', 'toki');
+  const isToyMode = GameState.currentMode === 'toy';
+  setMessage('出発進行！にゃ〜ん！🐾', isToyMode ? 'homura' : 'toki');
 
   const getStepDelay = () => parseInt(elements.speedSelect.value, 10) || 450;
   let isSuccess = false;
@@ -917,7 +1044,7 @@ async function runProgram() {
       // 壁衝突判定
       if (nextX < 0 || nextX >= GameState.GRID_SIZE || nextY < 0 || nextY >= GameState.GRID_SIZE) {
         // 壁に衝突！
-        setTokiMood('sad');
+        setPlayerMood('sad');
         setMessage('いたいっ！ かべに ぶつかっちゃった！(＞＜) 「リセット」をおして やりなおしてね！', 'sad');
         elements.toki.classList.add('shake-animation');
         await sleep(getStepDelay() + 200);
@@ -925,7 +1052,7 @@ async function runProgram() {
         break; // 停止
       } else if (GameState.obstacles.some(obs => obs.x === nextX && obs.y === nextY)) {
         // 障害物（ダンボール）に衝突！
-        setTokiMood('sad');
+        setPlayerMood('sad');
         setMessage('あぶない！ ダンボールに ぶつかっちゃった！(＞＜) 「リセット」をおして やりなおしてね！', 'sad');
         elements.toki.classList.add('shake-animation');
         await sleep(getStepDelay() + 200);
@@ -936,13 +1063,17 @@ async function runProgram() {
         GameState.x = nextX;
         GameState.y = nextY;
         updateTokiPosition(true);
-        setMessage(`まえに すすんだよ！ (いまの ばしょ: ${GameState.x}, ${GameState.y})`, 'toki');
+        setMessage(`まえに すすんだよ！ (いまの ばしょ: ${GameState.x}, ${GameState.y})`, isToyMode ? 'homura' : 'toki');
 
-        // トキが移動したマスにホムラが居たか判定
-        if (GameState.x === GameState.homuraX && GameState.y === GameState.homuraY) {
-          if (GameState.currentMode === 'toy' && GameState.collectedToys.length < GameState.toys.length) {
+        // プレイヤーが移動したマスにゴールが居たか判定
+        const isGoalReached = isToyMode
+          ? (GameState.x === GameState.goalX && GameState.y === GameState.goalY)
+          : (GameState.x === GameState.homuraX && GameState.y === GameState.homuraY);
+
+        if (isGoalReached) {
+          if (isToyMode && GameState.collectedToys.length < GameState.toys.length) {
             const remaining = GameState.toys.length - GameState.collectedToys.length;
-            setMessage(`ホムラ「ぬいぐるみが まだ たりないニャ〜！(あと ${remaining}こ) あつめてきてね！」`, 'homura');
+            setMessage(`トキ「ぬいぐるみが まだ たりないニャ〜！(あと ${remaining}こ) あつめてきてね！」`, 'toki');
           } else {
             isSuccess = true;
             onGoalReached();
@@ -957,34 +1088,35 @@ async function runProgram() {
       GameState.direction = (GameState.direction + 1) % 4;
       GameState.totalRotation += 90;
       updateTokiPosition(true);
-      setMessage('みぎを むいたよ！ ↷', 'toki');
+      setMessage('みぎを むいたよ！ ↷', isToyMode ? 'homura' : 'toki');
       actionExecuted = true;
     } else if (cmd.type === 'TURN_LEFT') {
       // 左を向く（-90度）
       GameState.direction = (GameState.direction + 3) % 4;
       GameState.totalRotation -= 90;
       updateTokiPosition(true);
-      setMessage('ひだりを むいたよ！ ↶', 'toki');
+      setMessage('ひだりを むいたよ！ ↶', isToyMode ? 'homura' : 'toki');
       actionExecuted = true;
     } else if (cmd.type === 'PICKUP') {
       // ぬいぐるみをひろう
       const pickedToy = pickupToyAt(GameState.x, GameState.y);
       if (pickedToy) {
-        setTokiMood('happy');
+        setPlayerMood('happy');
         const remaining = GameState.toys.length - GameState.collectedToys.length;
         const toyName = pickedToy.name || 'ぬいぐるみ';
         const toyIcon = pickedToy.icon || '🦐';
         if (remaining > 0) {
           setMessage(`${toyName}（${toyIcon}）を ひろったよ！ (のこり: ${remaining}こ)`, 'happy');
         } else {
-          setMessage(`${toyName}（${toyIcon}）を ひろったよ！ ぜんぶあつまった！ホムラのところへいこう！🎉`, 'happy');
+          const nextGoalName = isToyMode ? 'トキ' : 'ホムラ';
+          setMessage(`${toyName}（${toyIcon}）を ひろったよ！ ぜんぶあつまった！${nextGoalName}のところへいこう！🎉`, 'happy');
         }
         await sleep(Math.min(350, getStepDelay()));
-        setTokiMood('normal');
+        setPlayerMood('normal');
       } else {
         // 空振り：ぬいぐるみがないマスでの実行（エラー停止せず次に進む）
         elements.toki.classList.add('tilt-animation');
-        setMessage('あれ？ ここには ぬいぐるみが ないよ？ キョロキョロ…(・_・ )', 'toki');
+        setMessage('あれ？ ここには ぬいぐるみが ないよ？ キョロキョロ…(・_・ )', isToyMode ? 'homura' : 'toki');
         await sleep(getStepDelay());
         elements.toki.classList.remove('tilt-animation');
       }
@@ -1002,7 +1134,7 @@ async function runProgram() {
       if (GameState.x === GameState.homuraX && GameState.y === GameState.homuraY) {
         if (GameState.currentMode === 'toy' && GameState.collectedToys.length < GameState.toys.length) {
           const remaining = GameState.toys.length - GameState.collectedToys.length;
-          setMessage(`ホムラ「ぬいぐるみが まだ たりないニャ〜！(あと ${remaining}こ) あつめてきてね！」`, 'homura');
+          setMessage(`トキ「ぬいぐるみが まだ たりないニャ〜！(あと ${remaining}こ) あつめてきてね！」`, 'toki');
         } else {
           isSuccess = true;
           onGoalReached();
@@ -1021,16 +1153,23 @@ async function runProgram() {
 
   // 終了時のメッセージ（ゴール未到達時または未回収時）
   if (!isSuccess && !GameState.shouldStop) {
-    setTokiMood('sad');
-    if (GameState.currentMode === 'toy' && GameState.collectedToys.length < GameState.toys.length) {
+    setPlayerMood('sad');
+    const isAtGoal = isToyMode
+      ? (GameState.x === GameState.goalX && GameState.y === GameState.goalY)
+      : (GameState.x === GameState.homuraX && GameState.y === GameState.homuraY);
+
+    if (isToyMode && GameState.collectedToys.length < GameState.toys.length) {
       const remaining = GameState.toys.length - GameState.collectedToys.length;
-      if (GameState.x === GameState.homuraX && GameState.y === GameState.homuraY) {
-        setMessage(`ホムラ「ぬいぐるみが まだ たりないニャ〜！(あと ${remaining}こ) 「リセット」をおして やりなおしてね！」`, 'homura');
+      if (isAtGoal) {
+        setMessage(`トキ「ぬいぐるみが まだ たりないニャ〜！(あと ${remaining}こ) 「リセット」をおして やりなおしてね！」`, 'toki');
       } else {
         setMessage(`ぬいぐるみを ぜんぶ あつめられなかったよ…！(あと ${remaining}こ) 「リセット」をおして やりなおしてね！`, 'sad');
       }
     } else {
-      setMessage('ホムラをつかまえられなかったよ…！(＞＜) 「リセット」をおして やりなおしてね！', 'sad');
+      const failMsg = isToyMode
+        ? 'トキのところへ たどりつけなかったよ…！(＞＜) 「リセット」をおして やりなおしてね！'
+        : 'ホムラをつかまえられなかったよ…！(＞＜) 「リセット」をおして やりなおしてね！';
+      setMessage(failMsg, 'sad');
     }
   }
 
@@ -1045,7 +1184,7 @@ async function runProgram() {
  * ゴール到達時の演出
  */
 function onGoalReached() {
-  setTokiMood('happy');
+  setPlayerMood('happy');
   elements.toki.classList.add('victory-jump');
 
   // 作成したプログラムのブロック数を取得・判定
@@ -1059,7 +1198,7 @@ function onGoalReached() {
   if (isPerfect) {
     setMessage(`やったー！これ以上短くできない完璧なプログラムだよ！すごい！おめでとう！💮✨ (使ったブロック: ${usedBlocks}個)`, 'happy');
   } else {
-    const successAction = isToyMode ? 'ぬいぐるみをあつめて ホムラにあえたよ！🎉' : 'ホムラをつかまえたよ！🎉';
+    const successAction = isToyMode ? 'ぬいぐるみをあつめて トキにあえたよ！🎉' : 'ホムラをつかまえたよ！🎉';
     setMessage(`${successAction} くりかえし等をつかうと、もっと短くできるよ！ちょうせんしてみてね！💡 (いまのブロック: ${usedBlocks}個)`, 'happy');
   }
 
@@ -1067,13 +1206,13 @@ function onGoalReached() {
   if (elements.modalCatsContainer) {
     elements.modalCatsContainer.innerHTML = `
       <div class="modal-cat-box">
-        <div class="modal-cat-avatar">${TOKI_HAPPY_SVG}</div>
-        <span class="modal-cat-name">トキ (ハチワレ)</span>
+        <div class="modal-cat-avatar">${isToyMode ? HOMURA_HAPPY_SVG : TOKI_HAPPY_SVG}</div>
+        <span class="modal-cat-name">${isToyMode ? 'ホムラ (クリーム長毛)' : 'トキ (ハチワレ)'}</span>
       </div>
       <div class="modal-heart">💖</div>
       <div class="modal-cat-box">
-        <div class="modal-cat-avatar">${HOMURA_SVG}</div>
-        <span class="modal-cat-name">ホムラ (クリーム長毛)</span>
+        <div class="modal-cat-avatar">${isToyMode ? TOKI_HAPPY_SVG : HOMURA_SVG}</div>
+        <span class="modal-cat-name">${isToyMode ? 'トキ (ハチワレ)' : 'ホムラ (クリーム長毛)'}</span>
       </div>
     `;
   }
@@ -1085,7 +1224,7 @@ function onGoalReached() {
       : (isToyMode ? '🎉 ぬいぐるみを ぜんぶ とどけたよ！ 🎉' : '🎉 タッチ！ つかまえたよ！ 🎉');
   }
   if (elements.victoryDesc) {
-    const clearDesc = isToyMode ? 'ぬいぐるみをぜんぶあつめて ホムラにあえたよ！にゃーん！🎉' : 'ホムラをつかまえたよ！にゃーん！🎉';
+    const clearDesc = isToyMode ? 'ぬいぐるみをぜんぶあつめて トキにあえたよ！にゃーん！🎉' : 'ホムラをつかまえたよ！にゃーん！🎉';
     elements.victoryDesc.innerHTML = isPerfect
       ? `${clearDesc}<br><strong>これ以上 短くできない 完璧なプログラムです！</strong>`
       : `${clearDesc}<br>${isToyMode ? 'ぬいぐるみあつめ だいせいこう！' : 'おにごっこ せいこう！'}`;
@@ -1127,7 +1266,21 @@ function onGoalReached() {
 }
 
 /**
- * モードの切り替え (おにごっこ / おもちゃあつめ)
+ * モードに応じたUI（凡例・操作キャラクター・ゴール）の更新
+ */
+function updateModeUI() {
+  const isToyMode = GameState.currentMode === 'toy';
+  if (elements.legendStart) {
+    elements.legendStart.textContent = isToyMode ? '🚩 スタート: ホムラ (🐈)' : '🚩 スタート: トキ (🐾)';
+  }
+  if (elements.legendGoal) {
+    elements.legendGoal.textContent = isToyMode ? '🎯 ゴール: トキ (🐾)' : '🎯 ゴール: ホムラ (🐈)';
+  }
+  setPlayerMood('normal');
+}
+
+/**
+ * モードの切り替え (おにごっこ / ぬいぐるみあつめ)
  */
 function setMode(mode) {
   if (GameState.currentMode === mode) return;
@@ -1147,6 +1300,9 @@ function setMode(mode) {
       }
     });
   }
+
+  // 凡例やキャラクターの見た目を更新
+  updateModeUI();
 
   // レベルボタンの再描画
   renderLevelButtons();
@@ -1215,7 +1371,8 @@ function setLevel(levelId) {
 
   const currentLevelData = GameState.getCurrentLevelData();
   if (currentLevelData) {
-    setMessage(currentLevelData.startMessage, 'toki');
+    const isToyMode = GameState.currentMode === 'toy';
+    setMessage(currentLevelData.startMessage, isToyMode ? 'homura' : 'toki');
   }
 }
 
@@ -1226,21 +1383,23 @@ function resetGame() {
   GameState.shouldStop = true;
   GameState.reset();
 
-  setTokiMood('normal');
+  setPlayerMood('normal');
   elements.toki.classList.remove('victory-jump', 'shake-animation', 'tilt-animation');
   elements.victoryModal.classList.add('hidden');
   updateTokiPosition(true);
   updateGoalDisplay();
   updateToysDisplay();
   updateToyCounterDisplay();
+  updateModeUI();
 
   if (workspace) {
     workspace.highlightBlock(null);
   }
 
   const currentLevelData = GameState.getCurrentLevelData();
+  const isToyMode = GameState.currentMode === 'toy';
   const msg = currentLevelData ? currentLevelData.startMessage : 'スタートちてんに もどったよ！「うごかす！」をおしてね。';
-  setMessage(msg, 'toki');
+  setMessage(msg, isToyMode ? 'homura' : 'toki');
   elements.runBtn.disabled = false;
 }
 
@@ -1300,6 +1459,7 @@ window.addEventListener('DOMContentLoaded', () => {
   createGridBoard();
   initBlockly();
   setupEventListeners();
+  updateModeUI();
 
   // レンダリング完了後に盤面位置を同期
   requestAnimationFrame(() => {
