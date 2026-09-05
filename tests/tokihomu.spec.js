@@ -170,9 +170,9 @@ test.describe('tokihomu-lab (ときほむラボ) UIテスト', () => {
     await expect(page.locator('#legend-start')).toHaveText('🚩 スタート: ホムラ (🐈)');
     await expect(page.locator('#legend-goal')).toHaveText('🎯 ゴール: トキ (🐾)');
 
-    // レベルボタンがおもちゃモード用（レベル1, 2）になる
+    // レベルボタンがおもちゃモード用（レベル1, 2, 3）になる
     const levelBtns = page.locator('.level-btn');
-    await expect(levelBtns).toHaveCount(2);
+    await expect(levelBtns).toHaveCount(3);
 
     // レベル2に切り替え
     const level2Btn = page.locator('.level-btn[data-level="2"]');
@@ -325,5 +325,129 @@ test.describe('tokihomu-lab (ときほむラボ) UIテスト', () => {
 
     // カウンターも 0 / 1 にリセットされていること
     await expect(page.locator('#toy-counter-text')).toHaveText('0 / 1');
+  });
+
+  test('おもちゃあつめモード レベル3: ハテナの箱が2つ表示され、マスに入ると自動オープンすること', async ({ page }) => {
+    // おもちゃあつめモードに切り替え
+    await page.locator('.mode-tab[data-mode="toy"]').click();
+    await page.selectOption('#speed-select', '250');
+
+    // レベル3ボタンをクリック
+    const level3Btn = page.locator('.level-btn[data-level="3"]');
+    await expect(level3Btn).toBeVisible();
+    await expect(level3Btn).toContainText('🎁 レベル 3');
+    await level3Btn.click();
+    await expect(level3Btn).toHaveClass(/active/);
+
+    // 未開封の箱が2つ盤面に表示されていること（(1, 2) と (3, 2)）
+    const boxCells = page.locator('.toy-cell');
+    await expect(boxCells).toHaveCount(2);
+    const boxLabels = page.locator('.toy-label');
+    await expect(boxLabels.nth(0)).toHaveText('はこ');
+    await expect(boxLabels.nth(1)).toHaveText('はこ');
+
+    // 前進1マスのプログラムを作成して実行
+    await page.evaluate(() => {
+      workspace.clear();
+      const m1 = workspace.newBlock('toki_move');
+      m1.initSvg();
+      m1.render();
+    });
+
+    await page.locator('#run-btn').click();
+
+    // ホムラが(1, 2)に入り、箱が自動オープンすること（「パカッ！ はこを あけたら」）
+    const statusMsg = page.locator('#status-message');
+    await expect(statusMsg).toContainText('パカッ！ はこを あけたら', { timeout: 10000 });
+  });
+
+  test('おもちゃあつめモード レベル3: C型IFブロック（もしエビならひろう）を使ってクリアできること', async ({ page }) => {
+    // おもちゃあつめモードに切り替え
+    await page.locator('.mode-tab[data-mode="toy"]').click();
+    await page.selectOption('#speed-select', '250');
+
+    // レベル3を選択
+    await page.locator('.level-btn[data-level="3"]').click();
+
+    // プログラム: 前進 → (もしエビならひろう) → 前進 → 前進 → (もしエビならひろう) → 前進
+    await page.evaluate(() => {
+      workspace.clear();
+      const m1 = workspace.newBlock('toki_move');
+      const if1 = workspace.newBlock('toki_if');
+      if1.setFieldValue('🦐', 'ITEM');
+      const p1 = workspace.newBlock('toki_pickup');
+      if1.getInput('DO').connection.connect(p1.previousConnection);
+
+      const m2 = workspace.newBlock('toki_move');
+      const m3 = workspace.newBlock('toki_move');
+
+      const if2 = workspace.newBlock('toki_if');
+      if2.setFieldValue('🦐', 'ITEM');
+      const p2 = workspace.newBlock('toki_pickup');
+      if2.getInput('DO').connection.connect(p2.previousConnection);
+
+      const m4 = workspace.newBlock('toki_move');
+
+      m1.nextConnection.connect(if1.previousConnection);
+      if1.nextConnection.connect(m2.previousConnection);
+      m2.nextConnection.connect(m3.previousConnection);
+      m3.nextConnection.connect(if2.previousConnection);
+      if2.nextConnection.connect(m4.previousConnection);
+
+      [m1, if1, p1, m2, m3, if2, p2, m4].forEach(b => {
+        b.initSvg();
+        b.render();
+      });
+    });
+
+    await page.locator('#run-btn').click();
+
+    // エビのみ回収されてカウンターが「1 / 1」になること
+    await expect(page.locator('#toy-counter-text')).toHaveText('1 / 1', { timeout: 10000 });
+
+    // ゴール達成モーダルが表示されること
+    const victoryModal = page.locator('#victory-modal');
+    await expect(victoryModal).not.toHaveClass(/hidden/, { timeout: 10000 });
+    await expect(page.locator('#victory-title')).toContainText('ぬいぐるみを ぜんぶ とどけたよ');
+  });
+
+  test('おもちゃあつめモード レベル3: トイレットペーパー（紙）を拾ってしまうとトキに注意されてクリアできないこと', async ({ page }) => {
+    // おもちゃあつめモードに切り替え
+    await page.locator('.mode-tab[data-mode="toy"]').click();
+    await page.selectOption('#speed-select', '250');
+
+    // レベル3を選択
+    await page.locator('.level-btn[data-level="3"]').click();
+
+    // プログラム: 無条件に両方の箱でひろう（前進→ひろう→前進→前進→ひろう→前進）
+    await page.evaluate(() => {
+      workspace.clear();
+      const m1 = workspace.newBlock('toki_move');
+      const p1 = workspace.newBlock('toki_pickup');
+      const m2 = workspace.newBlock('toki_move');
+      const m3 = workspace.newBlock('toki_move');
+      const p2 = workspace.newBlock('toki_pickup');
+      const m4 = workspace.newBlock('toki_move');
+
+      m1.nextConnection.connect(p1.previousConnection);
+      p1.nextConnection.connect(m2.previousConnection);
+      m2.nextConnection.connect(m3.previousConnection);
+      m3.nextConnection.connect(p2.previousConnection);
+      p2.nextConnection.connect(m4.previousConnection);
+
+      [m1, p1, m2, m3, p2, m4].forEach(b => {
+        b.initSvg();
+        b.render();
+      });
+    });
+
+    await page.locator('#run-btn').click();
+
+    // トキから「トイレットペーパーで イタズラしちゃダメニャ〜！」と注意される
+    const statusMsg = page.locator('#status-message');
+    await expect(statusMsg).toContainText('トイレットペーパーで イタズラしちゃダメニャ〜！', { timeout: 10000 });
+
+    // クリアモーダルは表示されない
+    await expect(page.locator('#victory-modal')).toHaveClass(/hidden/);
   });
 });
