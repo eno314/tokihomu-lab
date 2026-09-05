@@ -135,6 +135,27 @@ const LEVELS_TOY = [
     ],
     startMessage: 'エビと ボールの ぬいぐるみが あるよ！ ダンボールをよけて ぜんぶひろってから トキに あいにいこう！',
     minBlocks: 11
+  },
+  {
+    id: 3,
+    name: 'レベル 3',
+    title: 'ハテナの箱と エビのぬいぐるみ',
+    description: 'はこを あけると なにが でてくるかな？ エビのぬいぐるみだけを ひろって、トキにあいにいこう！',
+    gridSize: 5,
+    startX: 0,
+    startY: 2,
+    startDirection: 1,
+    startRotation: 90,
+    goalX: 4,
+    goalY: 2,
+    obstacles: [],
+    hasRandomBoxes: true,
+    toys: [
+      { id: 'box-1', x: 1, y: 2, isBox: true, isOpened: false, icon: '🦐', name: 'エビのぬいぐるみ', isTrap: false },
+      { id: 'box-2', x: 3, y: 2, isBox: true, isOpened: false, icon: '🧻', name: 'トイレットペーパー', isTrap: true }
+    ],
+    startMessage: 'はこが 2つあるよ！ あけると エビ🦐 か トイレットペーパー🧻 がでてくるよ。「もし」ブロックをつかって エビだけをひろってね！',
+    minBlocks: 8
   }
 ];
 
@@ -153,6 +174,7 @@ const GameState = {
   obstacles: [],
   toys: [],
   collectedToys: [], // 収集済みtoyのid配列
+  collectedTraps: [], // 収集済みtrap（紙）のid配列
   movingGoal: false,
   homuraX: 4,
   homuraY: 4,
@@ -203,6 +225,32 @@ const GameState = {
     this.reset();
   },
 
+  // 箱の中身のシャッフル（50%で中身を入れ替え）
+  shuffleBoxes() {
+    const level = this.getCurrentLevelData();
+    if (!level.hasRandomBoxes || this.toys.length < 2) return;
+    const shouldSwap = typeof window !== 'undefined' && window.__forceBoxSwap !== undefined
+      ? !!window.__forceBoxSwap
+      : Math.random() < 0.5;
+
+    if (shouldSwap) {
+      const tempIcon = this.toys[0].icon;
+      const tempName = this.toys[0].name;
+      const tempIsTrap = this.toys[0].isTrap;
+
+      this.toys[0].icon = this.toys[1].icon;
+      this.toys[0].name = this.toys[1].name;
+      this.toys[0].isTrap = this.toys[1].isTrap;
+
+      this.toys[1].icon = tempIcon;
+      this.toys[1].name = tempName;
+      this.toys[1].isTrap = tempIsTrap;
+    }
+    this.toys.forEach(t => {
+      if (t.isBox) t.isOpened = false;
+    });
+  },
+
   // 初期化・リセット
   reset() {
     const level = this.getCurrentLevelData();
@@ -214,7 +262,11 @@ const GameState = {
     this.homuraY = level.goalY;
     this.homuraDir = level.homuraInitialDir || -1;
     this.toys = (level.toys || []).map(t => ({ ...t }));
+    if (level.hasRandomBoxes) {
+      this.shuffleBoxes();
+    }
     this.collectedToys = [];
+    this.collectedTraps = [];
     this.isRunning = false;
     this.shouldStop = false;
   }
@@ -559,6 +611,26 @@ function initBlockly(retries = 30) {
     }
   };
 
+  // --- カスタムブロック: もし〜なら ---
+  Blockly.Blocks['toki_if'] = {
+    init: function () {
+      this.appendDummyInput()
+        .appendField('もし あしもとが')
+        .appendField(new Blockly.FieldDropdown([
+          ['🦐 エビ', '🦐'],
+          ['🎾 ボール', '🎾'],
+          ['🧻 かみ', '🧻']
+        ]), 'ITEM')
+        .appendField('なら');
+      this.appendStatementInput('DO')
+        .appendField('これをする');
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour('#ab47bc');
+      this.setTooltip('あしもとにあるものが していしたものなら、なかのブロックをじっこうします');
+    }
+  };
+
   // ワークスペースの注入
   const toolboxXml = document.getElementById('toolbox');
   workspace = Blockly.inject(elements.blocklyDiv, {
@@ -693,7 +765,9 @@ function updateToysDisplay() {
 
   // 未回収のおもちゃを盤面に再配置
   GameState.toys.forEach(toy => {
-    if (!GameState.collectedToys.includes(toy.id)) {
+    const isCollected = GameState.collectedToys.includes(toy.id) ||
+      (GameState.collectedTraps && GameState.collectedTraps.includes(toy.id));
+    if (!isCollected) {
       const targetCell = elements.gridBoard.querySelector(
         `.grid-cell[data-x="${toy.x}"][data-y="${toy.y}"]`
       );
@@ -702,10 +776,22 @@ function updateToysDisplay() {
         const toyItem = document.createElement('div');
         toyItem.className = 'toy-item';
         toyItem.dataset.toyId = toy.id;
-        toyItem.innerHTML = `
-          <span>${toy.icon || '🦐'}</span>
-          <span class="toy-label">ぬいぐるみ</span>
-        `;
+
+        if (toy.isBox && !toy.isOpened) {
+          toyItem.classList.add('box-unopened');
+          toyItem.innerHTML = `
+            <span>🎁</span>
+            <span class="toy-label">はこ</span>
+          `;
+        } else {
+          if (toy.isBox && toy.isOpened) {
+            toyItem.classList.add('box-opened-anim');
+          }
+          toyItem.innerHTML = `
+            <span>${toy.icon || '🦐'}</span>
+            <span class="toy-label">${toy.name || 'ぬいぐるみ'}</span>
+          `;
+        }
         targetCell.appendChild(toyItem);
       }
     }
@@ -716,7 +802,8 @@ function updateToysDisplay() {
  * おもちゃカウンターと凡例の表示更新
  */
 function updateToyCounterDisplay() {
-  const total = GameState.toys.length;
+  const targetToys = GameState.toys.filter(t => !t.isTrap);
+  const total = targetToys.length;
   const isToyMode = GameState.currentMode === 'toy' && total > 0;
 
   if (elements.toyCounter) {
@@ -736,14 +823,21 @@ function updateToyCounterDisplay() {
  */
 function pickupToyAt(x, y) {
   const toyIndex = GameState.toys.findIndex(
-    t => t.x === x && t.y === y && !GameState.collectedToys.includes(t.id)
+    t => t.x === x && t.y === y &&
+      !GameState.collectedToys.includes(t.id) &&
+      !(GameState.collectedTraps && GameState.collectedTraps.includes(t.id))
   );
   if (toyIndex === -1) {
     return null; // おもちゃがない
   }
 
   const toy = GameState.toys[toyIndex];
-  GameState.collectedToys.push(toy.id);
+  if (toy.isTrap) {
+    if (!GameState.collectedTraps) GameState.collectedTraps = [];
+    GameState.collectedTraps.push(toy.id);
+  } else {
+    GameState.collectedToys.push(toy.id);
+  }
 
   // 盤面セルの見た目を更新
   const cell = elements.gridBoard.querySelector(`.grid-cell[data-x="${x}"][data-y="${y}"]`);
@@ -929,23 +1023,36 @@ function getCommandsFromWorkspace() {
   // 最も上にあるトップブロックから順に取得
   const commands = [];
 
-  function traverse(block) {
+  function traverse(block, targetList) {
     let current = block;
     while (current) {
       if (current.type === 'toki_move') {
-        commands.push({ type: 'MOVE', blockId: current.id });
+        targetList.push({ type: 'MOVE', blockId: current.id });
       } else if (current.type === 'toki_turn_right') {
-        commands.push({ type: 'TURN_RIGHT', blockId: current.id });
+        targetList.push({ type: 'TURN_RIGHT', blockId: current.id });
       } else if (current.type === 'toki_turn_left') {
-        commands.push({ type: 'TURN_LEFT', blockId: current.id });
+        targetList.push({ type: 'TURN_LEFT', blockId: current.id });
       } else if (current.type === 'toki_pickup') {
-        commands.push({ type: 'PICKUP', blockId: current.id });
+        targetList.push({ type: 'PICKUP', blockId: current.id });
+      } else if (current.type === 'toki_if') {
+        const item = current.getFieldValue('ITEM') || '🦐';
+        const branchBlock = current.getInputTargetBlock('DO');
+        const branchCommands = [];
+        if (branchBlock) {
+          traverse(branchBlock, branchCommands);
+        }
+        targetList.push({
+          type: 'IF',
+          conditionItem: item,
+          branch: branchCommands,
+          blockId: current.id
+        });
       } else if (current.type === 'toki_repeat') {
         const times = parseInt(current.getFieldValue('TIMES'), 10) || 1;
         const branchBlock = current.getInputTargetBlock('DO');
         for (let i = 0; i < times; i++) {
           if (branchBlock) {
-            traverse(branchBlock);
+            traverse(branchBlock, targetList);
           }
         }
       }
@@ -954,7 +1061,7 @@ function getCommandsFromWorkspace() {
   }
 
   // 1番目（最上位）のトップブロックを実行対象とする
-  traverse(topBlocks[0]);
+  traverse(topBlocks[0], commands);
   return commands;
 }
 
@@ -1018,61 +1125,167 @@ async function runProgram() {
   const getStepDelay = () => parseInt(elements.speedSelect.value, 10) || 450;
   let isSuccess = false;
 
-  for (let i = 0; i < commands.length; i++) {
-    if (GameState.shouldStop) break;
+  async function executeCommandList(cmdList) {
+    for (let i = 0; i < cmdList.length; i++) {
+      if (GameState.shouldStop || isSuccess) break;
 
-    const cmd = commands[i];
+      const cmd = cmdList[i];
 
-    // 実行中ブロックのハイライト
-    if (workspace && cmd.blockId) {
-      workspace.highlightBlock(cmd.blockId);
-    }
+      // 実行中ブロックのハイライト
+      if (workspace && cmd.blockId) {
+        workspace.highlightBlock(cmd.blockId);
+      }
 
-    let actionExecuted = false;
+      if (cmd.type === 'IF') {
+        // 現在地の未回収アイテム（開いている箱を含む）を取得
+        const currentToy = GameState.toys.find(
+          t => t.x === GameState.x && t.y === GameState.y &&
+            !GameState.collectedToys.includes(t.id) &&
+            !(GameState.collectedTraps && GameState.collectedTraps.includes(t.id))
+        );
+        const matches = currentToy && currentToy.icon === cmd.conditionItem;
+        if (matches) {
+          await executeCommandList(cmd.branch);
+        } else {
+          // 条件不一致：何もしないで少しウェイト
+          await sleep(Math.min(200, getStepDelay()));
+        }
+        await sleep(getStepDelay());
+        continue;
+      }
 
-    if (cmd.type === 'MOVE') {
-      // 向きに応じた移動ベクトル
-      // 0: 上, 1: 右, 2: 下, 3: 左
-      let nextX = GameState.x;
-      let nextY = GameState.y;
+      let actionExecuted = false;
 
-      if (GameState.direction === 0) nextY -= 1;
-      else if (GameState.direction === 1) nextX += 1;
-      else if (GameState.direction === 2) nextY += 1;
-      else if (GameState.direction === 3) nextX -= 1;
+      if (cmd.type === 'MOVE') {
+        // 向きに応じた移動ベクトル
+        // 0: 上, 1: 右, 2: 下, 3: 左
+        let nextX = GameState.x;
+        let nextY = GameState.y;
 
-      // 壁衝突判定
-      if (nextX < 0 || nextX >= GameState.GRID_SIZE || nextY < 0 || nextY >= GameState.GRID_SIZE) {
-        // 壁に衝突！
-        setPlayerMood('sad');
-        setMessage('いたいっ！ かべに ぶつかっちゃった！(＞＜) 「リセット」をおして やりなおしてね！', 'sad');
-        elements.toki.classList.add('shake-animation');
-        await sleep(getStepDelay() + 200);
-        elements.toki.classList.remove('shake-animation');
-        break; // 停止
-      } else if (GameState.obstacles.some(obs => obs.x === nextX && obs.y === nextY)) {
-        // 障害物（ダンボール）に衝突！
-        setPlayerMood('sad');
-        setMessage('あぶない！ ダンボールに ぶつかっちゃった！(＞＜) 「リセット」をおして やりなおしてね！', 'sad');
-        elements.toki.classList.add('shake-animation');
-        await sleep(getStepDelay() + 200);
-        elements.toki.classList.remove('shake-animation');
-        break; // 停止
-      } else {
-        // 正常移動
-        GameState.x = nextX;
-        GameState.y = nextY;
+        if (GameState.direction === 0) nextY -= 1;
+        else if (GameState.direction === 1) nextX += 1;
+        else if (GameState.direction === 2) nextY += 1;
+        else if (GameState.direction === 3) nextX -= 1;
+
+        // 壁衝突判定
+        if (nextX < 0 || nextX >= GameState.GRID_SIZE || nextY < 0 || nextY >= GameState.GRID_SIZE) {
+          // 壁に衝突！
+          setPlayerMood('sad');
+          setMessage('いたいっ！ かべに ぶつかっちゃった！(＞＜) 「リセット」をおして やりなおしてね！', 'sad');
+          elements.toki.classList.add('shake-animation');
+          await sleep(getStepDelay() + 200);
+          elements.toki.classList.remove('shake-animation');
+          GameState.shouldStop = true;
+          break; // 停止
+        } else if (GameState.obstacles.some(obs => obs.x === nextX && obs.y === nextY)) {
+          // 障害物（ダンボール）に衝突！
+          setPlayerMood('sad');
+          setMessage('あぶない！ ダンボールに ぶつかっちゃった！(＞＜) 「リセット」をおして やりなおしてね！', 'sad');
+          elements.toki.classList.add('shake-animation');
+          await sleep(getStepDelay() + 200);
+          elements.toki.classList.remove('shake-animation');
+          GameState.shouldStop = true;
+          break; // 停止
+        } else {
+          // 正常移動
+          GameState.x = nextX;
+          GameState.y = nextY;
+          updateTokiPosition(true);
+          setMessage(`まえに すすんだよ！ (いまの ばしょ: ${GameState.x}, ${GameState.y})`, isToyMode ? 'homura' : 'toki');
+
+          // 箱の自動オープン判定
+          const boxToy = GameState.toys.find(t => t.x === GameState.x && t.y === GameState.y && t.isBox && !t.isOpened);
+          if (boxToy) {
+            boxToy.isOpened = true;
+            updateToysDisplay();
+            setMessage(`パカッ！ はこを あけたら ${boxToy.name}（${boxToy.icon}）が はいっていたよ！`, isToyMode ? 'homura' : 'toki');
+            await sleep(Math.min(300, getStepDelay()));
+          }
+
+          // プレイヤーが移動したマスにゴールが居たか判定
+          const targetTotal = GameState.toys.filter(t => !t.isTrap).length;
+          const hasTrap = GameState.collectedTraps && GameState.collectedTraps.length > 0;
+          const isGoalReached = isToyMode
+            ? (GameState.x === GameState.goalX && GameState.y === GameState.goalY)
+            : (GameState.x === GameState.homuraX && GameState.y === GameState.homuraY);
+
+          if (isGoalReached) {
+            if (isToyMode && hasTrap) {
+              setMessage('トキ「トイレットペーパーで イタズラしちゃダメニャ〜！🧻💦 エビのぬいぐるみを もってきてね！」', 'toki');
+            } else if (isToyMode && GameState.collectedToys.length < targetTotal) {
+              const remaining = targetTotal - GameState.collectedToys.length;
+              setMessage(`トキ「ぬいぐるみが まだ たりないニャ〜！(あと ${remaining}こ) あつめてきてね！」`, 'toki');
+            } else {
+              isSuccess = true;
+              onGoalReached();
+              break;
+            }
+          }
+
+          actionExecuted = true;
+        }
+      } else if (cmd.type === 'TURN_RIGHT') {
+        // 右を向く（+90度）
+        GameState.direction = (GameState.direction + 1) % 4;
+        GameState.totalRotation += 90;
         updateTokiPosition(true);
-        setMessage(`まえに すすんだよ！ (いまの ばしょ: ${GameState.x}, ${GameState.y})`, isToyMode ? 'homura' : 'toki');
+        setMessage('みぎを むいたよ！ ↷', isToyMode ? 'homura' : 'toki');
+        actionExecuted = true;
+      } else if (cmd.type === 'TURN_LEFT') {
+        // 左を向く（-90度）
+        GameState.direction = (GameState.direction + 3) % 4;
+        GameState.totalRotation -= 90;
+        updateTokiPosition(true);
+        setMessage('ひだりを むいたよ！ ↶', isToyMode ? 'homura' : 'toki');
+        actionExecuted = true;
+      } else if (cmd.type === 'PICKUP') {
+        // ぬいぐるみをひろう
+        const pickedToy = pickupToyAt(GameState.x, GameState.y);
+        if (pickedToy) {
+          if (pickedToy.isTrap) {
+            setPlayerMood('sad');
+            setMessage(`${pickedToy.name}（${pickedToy.icon}）を ひろっちゃった！ からまっちゃうニャ〜！💦`, 'sad');
+            await sleep(Math.min(350, getStepDelay()));
+          } else {
+            setPlayerMood('happy');
+            const targetTotal = GameState.toys.filter(t => !t.isTrap).length;
+            const remaining = targetTotal - GameState.collectedToys.length;
+            const toyName = pickedToy.name || 'ぬいぐるみ';
+            const toyIcon = pickedToy.icon || '🦐';
+            if (remaining > 0) {
+              setMessage(`${toyName}（${toyIcon}）を ひろったよ！ (のこり: ${remaining}こ)`, 'happy');
+            } else {
+              const nextGoalName = isToyMode ? 'トキ' : 'ホムラ';
+              setMessage(`${toyName}（${toyIcon}）を ひろったよ！ ぜんぶあつまった！${nextGoalName}のところへいこう！🎉`, 'happy');
+            }
+            await sleep(Math.min(350, getStepDelay()));
+            setPlayerMood('normal');
+          }
+        } else {
+          // 空振り：ぬいぐるみがないマスでの実行（エラー停止せず次に進む）
+          elements.toki.classList.add('tilt-animation');
+          setMessage('あれ？ ここには ぬいぐるみが ないよ？ キョロキョロ…(・_・ )', isToyMode ? 'homura' : 'toki');
+          await sleep(getStepDelay());
+          elements.toki.classList.remove('tilt-animation');
+        }
+        actionExecuted = true;
+      }
 
-        // プレイヤーが移動したマスにゴールが居たか判定
-        const isGoalReached = isToyMode
-          ? (GameState.x === GameState.goalX && GameState.y === GameState.goalY)
-          : (GameState.x === GameState.homuraX && GameState.y === GameState.homuraY);
+      // トキが命令（進む・向く・ひろう）を実行するたびに動くゴールの処理（レベル3・4）
+      if (actionExecuted && GameState.movingGoal) {
+        await sleep(Math.min(250, Math.floor(getStepDelay() / 2)));
+        if (GameState.shouldStop) break;
+        moveHomura();
+        setMessage(`ホムラも てくてく にげたよ！ (ホムラの ばしょ: ${GameState.homuraX}, ${GameState.homuraY})`, 'homura');
 
-        if (isGoalReached) {
-          if (isToyMode && GameState.collectedToys.length < GameState.toys.length) {
-            const remaining = GameState.toys.length - GameState.collectedToys.length;
+        // ホムラがトキのいるマスに移動してきたか判定
+        if (GameState.x === GameState.homuraX && GameState.y === GameState.homuraY) {
+          const targetTotal = GameState.toys.filter(t => !t.isTrap).length;
+          const hasTrap = GameState.collectedTraps && GameState.collectedTraps.length > 0;
+          if (isToyMode && hasTrap) {
+            setMessage('トキ「トイレットペーパーで イタズラしちゃダメニャ〜！🧻💦 エビのぬいぐるみを もってきてね！」', 'toki');
+          } else if (isToyMode && GameState.collectedToys.length < targetTotal) {
+            const remaining = targetTotal - GameState.collectedToys.length;
             setMessage(`トキ「ぬいぐるみが まだ たりないニャ〜！(あと ${remaining}こ) あつめてきてね！」`, 'toki');
           } else {
             isSuccess = true;
@@ -1080,71 +1293,13 @@ async function runProgram() {
             break;
           }
         }
+      }
 
-        actionExecuted = true;
-      }
-    } else if (cmd.type === 'TURN_RIGHT') {
-      // 右を向く（+90度）
-      GameState.direction = (GameState.direction + 1) % 4;
-      GameState.totalRotation += 90;
-      updateTokiPosition(true);
-      setMessage('みぎを むいたよ！ ↷', isToyMode ? 'homura' : 'toki');
-      actionExecuted = true;
-    } else if (cmd.type === 'TURN_LEFT') {
-      // 左を向く（-90度）
-      GameState.direction = (GameState.direction + 3) % 4;
-      GameState.totalRotation -= 90;
-      updateTokiPosition(true);
-      setMessage('ひだりを むいたよ！ ↶', isToyMode ? 'homura' : 'toki');
-      actionExecuted = true;
-    } else if (cmd.type === 'PICKUP') {
-      // ぬいぐるみをひろう
-      const pickedToy = pickupToyAt(GameState.x, GameState.y);
-      if (pickedToy) {
-        setPlayerMood('happy');
-        const remaining = GameState.toys.length - GameState.collectedToys.length;
-        const toyName = pickedToy.name || 'ぬいぐるみ';
-        const toyIcon = pickedToy.icon || '🦐';
-        if (remaining > 0) {
-          setMessage(`${toyName}（${toyIcon}）を ひろったよ！ (のこり: ${remaining}こ)`, 'happy');
-        } else {
-          const nextGoalName = isToyMode ? 'トキ' : 'ホムラ';
-          setMessage(`${toyName}（${toyIcon}）を ひろったよ！ ぜんぶあつまった！${nextGoalName}のところへいこう！🎉`, 'happy');
-        }
-        await sleep(Math.min(350, getStepDelay()));
-        setPlayerMood('normal');
-      } else {
-        // 空振り：ぬいぐるみがないマスでの実行（エラー停止せず次に進む）
-        elements.toki.classList.add('tilt-animation');
-        setMessage('あれ？ ここには ぬいぐるみが ないよ？ キョロキョロ…(・_・ )', isToyMode ? 'homura' : 'toki');
-        await sleep(getStepDelay());
-        elements.toki.classList.remove('tilt-animation');
-      }
-      actionExecuted = true;
+      await sleep(getStepDelay());
     }
-
-    // トキが命令（進む・向く・ひろう）を実行するたびに動くゴールの処理（レベル3・4）
-    if (actionExecuted && GameState.movingGoal) {
-      await sleep(Math.min(250, Math.floor(getStepDelay() / 2)));
-      if (GameState.shouldStop) break;
-      moveHomura();
-      setMessage(`ホムラも てくてく にげたよ！ (ホムラの ばしょ: ${GameState.homuraX}, ${GameState.homuraY})`, 'homura');
-
-      // ホムラがトキのいるマスに移動してきたか判定
-      if (GameState.x === GameState.homuraX && GameState.y === GameState.homuraY) {
-        if (GameState.currentMode === 'toy' && GameState.collectedToys.length < GameState.toys.length) {
-          const remaining = GameState.toys.length - GameState.collectedToys.length;
-          setMessage(`トキ「ぬいぐるみが まだ たりないニャ〜！(あと ${remaining}こ) あつめてきてね！」`, 'toki');
-        } else {
-          isSuccess = true;
-          onGoalReached();
-          break;
-        }
-      }
-    }
-
-    await sleep(getStepDelay());
   }
+
+  await executeCommandList(commands);
 
   // ブロックハイライト解除
   if (workspace) {
@@ -1158,8 +1313,17 @@ async function runProgram() {
       ? (GameState.x === GameState.goalX && GameState.y === GameState.goalY)
       : (GameState.x === GameState.homuraX && GameState.y === GameState.homuraY);
 
-    if (isToyMode && GameState.collectedToys.length < GameState.toys.length) {
-      const remaining = GameState.toys.length - GameState.collectedToys.length;
+    const targetTotal = GameState.toys.filter(t => !t.isTrap).length;
+    const hasTrap = GameState.collectedTraps && GameState.collectedTraps.length > 0;
+
+    if (isToyMode && hasTrap) {
+      if (isAtGoal) {
+        setMessage('トキ「トイレットペーパーで イタズラしちゃダメニャ〜！🧻💦 「リセット」をおして やりなおしてね！」', 'toki');
+      } else {
+        setMessage('トイレットペーパーを ひろっちゃったよ…！🧻💦 「リセット」をおして やりなおしてね！', 'sad');
+      }
+    } else if (isToyMode && GameState.collectedToys.length < targetTotal) {
+      const remaining = targetTotal - GameState.collectedToys.length;
       if (isAtGoal) {
         setMessage(`トキ「ぬいぐるみが まだ たりないニャ〜！(あと ${remaining}こ) 「リセット」をおして やりなおしてね！」`, 'toki');
       } else {
@@ -1334,7 +1498,7 @@ function renderLevelButtons() {
     btn.dataset.level = level.id;
     let icon = '🌟';
     if (GameState.currentMode === 'toy') {
-      icon = level.id === 1 ? '🦐' : '🎾';
+      icon = level.id === 1 ? '🦐' : level.id === 2 ? '🎾' : '🎁';
     } else {
       icon = level.id === 1 ? '🌟' : level.id === 2 ? '📦' : level.id === 3 ? '🐾' : '👑';
     }
