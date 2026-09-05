@@ -562,26 +562,15 @@ function createGridBoard() {
         cell.appendChild(obstacleItem);
       }
 
-      // おもちゃセル
-      const toy = GameState.toys.find(t => t.x === x && t.y === y && !GameState.collectedToys.includes(t.id));
-      if (toy) {
-        cell.classList.add('toy-cell');
-        const toyItem = document.createElement('div');
-        toyItem.className = 'toy-item';
-        toyItem.dataset.toyId = toy.id;
-        toyItem.innerHTML = `
-          <span>${toy.icon || '🦐'}</span>
-          <span class="toy-label">ぬいぐるみ</span>
-        `;
-        cell.appendChild(toyItem);
-      }
-
       elements.gridBoard.appendChild(cell);
     }
   }
 
   // ゴール（ホムラ）の描画
   updateGoalDisplay();
+
+  // おもちゃ（ぬいぐるみ）の描画
+  updateToysDisplay();
 
   // 凡例の障害物表示切り替え
   if (elements.legendObstacle) {
@@ -592,6 +581,41 @@ function createGridBoard() {
   updateToyCounterDisplay();
 
   updateTokiPosition(false);
+}
+
+/**
+ * 盤面のおもちゃ（ぬいぐるみ）表示更新
+ */
+function updateToysDisplay() {
+  if (!elements.gridBoard) return;
+
+  // 全セルからおもちゃ表示をクリア
+  const allCells = elements.gridBoard.querySelectorAll('.grid-cell');
+  allCells.forEach(cell => {
+    cell.classList.remove('toy-cell');
+    const toyItem = cell.querySelector('.toy-item');
+    if (toyItem) toyItem.remove();
+  });
+
+  // 未回収のおもちゃを盤面に再配置
+  GameState.toys.forEach(toy => {
+    if (!GameState.collectedToys.includes(toy.id)) {
+      const targetCell = elements.gridBoard.querySelector(
+        `.grid-cell[data-x="${toy.x}"][data-y="${toy.y}"]`
+      );
+      if (targetCell) {
+        targetCell.classList.add('toy-cell');
+        const toyItem = document.createElement('div');
+        toyItem.className = 'toy-item';
+        toyItem.dataset.toyId = toy.id;
+        toyItem.innerHTML = `
+          <span>${toy.icon || '🦐'}</span>
+          <span class="toy-label">ぬいぐるみ</span>
+        `;
+        targetCell.appendChild(toyItem);
+      }
+    }
+  });
 }
 
 /**
@@ -1207,6 +1231,7 @@ function resetGame() {
   elements.victoryModal.classList.add('hidden');
   updateTokiPosition(true);
   updateGoalDisplay();
+  updateToysDisplay();
   updateToyCounterDisplay();
 
   if (workspace) {
