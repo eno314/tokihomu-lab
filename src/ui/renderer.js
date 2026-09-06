@@ -260,7 +260,9 @@ export function updateSupervisorPositions() {
   state.sortLanes.forEach(lane => {
     const supervisor = document.getElementById(`sort-supervisor-${lane.id}`);
     if (supervisor) {
-      supervisor.style.left = `${state.sortPointer === 0 ? 33.3 : 66.6}%`;
+      const numCats = (lane.cats && lane.cats.length) ? lane.cats.length : 3;
+      const percent = ((state.sortPointer + 1) / numCats) * 100;
+      supervisor.style.left = `${percent}%`;
     }
     lane.cats.forEach((_, idx) => {
       const slot = document.getElementById(`cat-slot-${lane.id}-${idx}`);
@@ -298,7 +300,7 @@ export function updateModeUI() {
 
 const LEVEL_ICONS = {
   toy: { 1: '🦐', 2: '🎾', 3: '🎁', 4: '👑' },
-  sort: { 1: '🌟', 2: '👑' },
+  sort: { 1: '🌟', 2: '🐾', 3: '👑' },
   chase: { 1: '🌟', 2: '📦', 3: '🐾', 4: '👑' }
 };
 

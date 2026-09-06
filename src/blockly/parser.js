@@ -2,9 +2,9 @@
  * tokihomu-lab Blockly ワークスペース解析・コマンド抽出パーサー
  */
 
-function extractBranchCommands(block, traverseFn) {
+function extractBranchCommands(block, traverseFn, inputName = 'DO') {
   if (!block || typeof block.getInputTargetBlock !== 'function') return [];
-  const branchBlock = block.getInputTargetBlock('DO');
+  const branchBlock = block.getInputTargetBlock(inputName);
   if (!branchBlock) return [];
   const branchCommands = [];
   traverseFn(branchBlock, branchCommands);
@@ -23,27 +23,44 @@ const BLOCK_PARSERS = {
       type: 'IF',
       target,
       conditionItem: item,
-      branch: extractBranchCommands(block, traverseFn),
+      branch: extractBranchCommands(block, traverseFn, 'DO'),
       blockId: block.id
     }];
   },
   toki_repeat: (block, traverseFn) => {
     const times = parseInt(typeof block.getFieldValue === 'function' ? block.getFieldValue('TIMES') : '1', 10) || 1;
-    const branchCommands = extractBranchCommands(block, traverseFn);
+    const branchCommands = extractBranchCommands(block, traverseFn, 'DO');
     const repeated = [];
     for (let i = 0; i < times; i++) {
       repeated.push(...branchCommands);
     }
     return repeated;
   },
-  sort_if: (block, traverseFn) => [{
-    type: 'SORT_IF',
-    branch: extractBranchCommands(block, traverseFn),
-    blockId: block.id
-  }],
+  sort_if: (block, traverseFn) => {
+    const rawCond = typeof block.getFieldValue === 'function' ? block.getFieldValue('CONDITION') : null;
+    const condition = (rawCond === 'at_end' || rawCond === 'いちばんうしろ') ? 'at_end' : 'greater';
+    return [{
+      type: 'SORT_IF',
+      condition,
+      branch: extractBranchCommands(block, traverseFn, 'DO'),
+      blockId: block.id
+    }];
+  },
+  sort_if_else: (block, traverseFn) => {
+    const rawCond = typeof block.getFieldValue === 'function' ? block.getFieldValue('CONDITION') : null;
+    const condition = (rawCond === 'at_end' || rawCond === 'いちばんうしろ') ? 'at_end' : 'greater';
+    return [{
+      type: 'SORT_IF_ELSE',
+      condition,
+      branch: extractBranchCommands(block, traverseFn, 'DO'),
+      elseBranch: extractBranchCommands(block, traverseFn, 'ELSE'),
+      blockId: block.id
+    }];
+  },
   sort_swap: (block) => [{ type: 'SORT_SWAP', blockId: block.id }],
   sort_compare_swap: (block) => [{
     type: 'SORT_IF',
+    condition: 'greater',
     branch: [{ type: 'SORT_SWAP', blockId: block.id }],
     blockId: block.id
   }],
@@ -78,9 +95,13 @@ function countBlocksInChain(startBlock) {
   while (current) {
     count++;
     if (typeof current.getInputTargetBlock === 'function') {
-      const branchBlock = current.getInputTargetBlock('DO');
-      if (branchBlock) {
-        count += countBlocksInChain(branchBlock);
+      const doBlock = current.getInputTargetBlock('DO');
+      if (doBlock) {
+        count += countBlocksInChain(doBlock);
+      }
+      const elseBlock = current.getInputTargetBlock('ELSE');
+      if (elseBlock) {
+        count += countBlocksInChain(elseBlock);
       }
     }
     current = typeof current.getNextBlock === 'function' ? current.getNextBlock() : null;

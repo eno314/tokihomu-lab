@@ -235,6 +235,38 @@ export const LEVELS_SORT = [
     ],
     startMessage: 'トキ組と ホムラ組で ならびじゅんが ちがうよ！「くりかえし」のなかに「もし」と「いれかえる」をつかって、りょうほうクリアしよう！',
     minBlocks: 7
+  },
+  {
+    id: 3,
+    name: 'レベル 3',
+    title: '4匹の おおきさくらべ！',
+    description: 'メインクーンも くわわった 4匹のねこたちを、ちいさいじゅんに ならべかえよう！',
+    lanes: [
+      {
+        id: 'toki',
+        name: 'トキ組',
+        supervisor: 'toki',
+        cats: [
+          { type: 'mainecoon', name: 'メインクーン', size: 4, badge: '特大 (4)' },
+          { type: 'siberian', name: 'サイベ', size: 3, badge: '大 (3)' },
+          { type: 'americanshorthair', name: 'アメショ', size: 2, badge: '中 (2)' },
+          { type: 'munchkin', name: 'マンチカン', size: 1, badge: '小 (1)' }
+        ]
+      },
+      {
+        id: 'homura',
+        name: 'ホムラ組',
+        supervisor: 'homura',
+        cats: [
+          { type: 'americanshorthair', name: 'アメショ', size: 2, badge: '中 (2)' },
+          { type: 'mainecoon', name: 'メインクーン', size: 4, badge: '特大 (4)' },
+          { type: 'munchkin', name: 'マンチカン', size: 1, badge: '小 (1)' },
+          { type: 'siberian', name: 'サイベ', size: 3, badge: '大 (3)' }
+        ]
+      }
+    ],
+    startMessage: '4匹になったよ！「くりかえし」を うまく つかって、ぜんぶ ちいさいじゅんに ならべかえよう！',
+    minBlocks: 6
   }
 ];
 

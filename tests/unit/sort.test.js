@@ -11,12 +11,16 @@ describe('sort domain logic', () => {
   const catSmall = { type: 'munchkin', size: 1, name: 'マンチカン' };
   const catMid = { type: 'americanshorthair', size: 2, name: 'アメショ' };
   const catBig = { type: 'siberian', size: 3, name: 'サイベ' };
+  const catHuge = { type: 'mainecoon', size: 4, name: 'メインクーン' };
 
   describe('isLaneSorted', () => {
     const cases = [
       { name: '昇順整列済み [小, 中, 大]', cats: [catSmall, catMid, catBig], expected: true },
       { name: '降順 [大, 中, 小]', cats: [catBig, catMid, catSmall], expected: false },
       { name: '一部不順 [中, 小, 大]', cats: [catMid, catSmall, catBig], expected: false },
+      { name: '昇順整列済み 4匹 [小, 中, 大, 特大]', cats: [catSmall, catMid, catBig, catHuge], expected: true },
+      { name: '降順 4匹 [特大, 大, 中, 小]', cats: [catHuge, catBig, catMid, catSmall], expected: false },
+      { name: '不順 4匹 [中, 特大, 小, 大]', cats: [catMid, catHuge, catSmall, catBig], expected: false },
       { name: '要素1匹 [小]', cats: [catSmall], expected: true },
       { name: '空レーン []', cats: [], expected: true }
     ];
@@ -31,6 +35,14 @@ describe('sort domain logic', () => {
       {
         name: '全レーン整列済み',
         lanes: [{ cats: [catSmall, catMid, catBig] }, { cats: [catSmall, catMid, catBig] }],
+        expected: true
+      },
+      {
+        name: '全レーン整列済み 4匹',
+        lanes: [
+          { cats: [catSmall, catMid, catBig, catHuge] },
+          { cats: [catSmall, catMid, catBig, catHuge] }
+        ],
         expected: true
       },
       {
@@ -70,6 +82,18 @@ describe('sort domain logic', () => {
         expectedSwapped: false
       },
       {
+        name: '4匹レーンで末尾ペア (3 vs 4) でスワップ不成立',
+        testLane: { id: 'test4', cats: [catSmall, catMid, catBig, catHuge] },
+        pointer: 2,
+        expectedSwapped: false
+      },
+      {
+        name: '4匹レーンで末尾ペア (4 > 3) でスワップ成立',
+        testLane: { id: 'test4', cats: [catSmall, catMid, catHuge, catBig] },
+        pointer: 2,
+        expectedSwapped: true
+      },
+      {
         name: 'ポインタ範囲外でスワップ不成立',
         testLane: lane,
         pointer: 2,
@@ -86,7 +110,9 @@ describe('sort domain logic', () => {
   describe('stepSortPointer', () => {
     const cases = [
       { current: 0, max: 1, expected: { nextPointer: 1, isOutOfBounds: false } },
-      { current: 1, max: 1, expected: { nextPointer: 1, isOutOfBounds: true } }
+      { current: 1, max: 1, expected: { nextPointer: 1, isOutOfBounds: true } },
+      { current: 1, max: 2, expected: { nextPointer: 2, isOutOfBounds: false } },
+      { current: 2, max: 2, expected: { nextPointer: 2, isOutOfBounds: true } }
     ];
 
     it.each(cases)('pointer=$current, max=$max', ({ current, max, expected }) => {
@@ -95,11 +121,24 @@ describe('sort domain logic', () => {
   });
 
   describe('filterLanesByCondition', () => {
-    it('左の猫 > 右の猫 となっているレーンのみを抽出すること', () => {
-      const lane1 = { id: 'l1', cats: [catBig, catSmall, catMid] };
-      const lane2 = { id: 'l2', cats: [catSmall, catBig, catMid] };
-      const filtered = filterLanesByCondition([lane1, lane2], 0);
+    const lane1 = { id: 'l1', cats: [catBig, catSmall, catMid] };
+    const lane2 = { id: 'l2', cats: [catSmall, catBig, catMid] };
+
+    it('greater条件: 左の猫 > 右の猫 となっているレーンのみを抽出すること', () => {
+      const filtered = filterLanesByCondition([lane1, lane2], 0, 'greater');
       expect(filtered).toEqual([lane1]);
+    });
+
+    it('at_end条件: 一番後ろのペアにいるレーンのみを抽出すること', () => {
+      // 3匹の場合、一番後ろのペアは pointer = 1 (cats.length - 2)
+      expect(filterLanesByCondition([lane1], 0, 'at_end')).toEqual([]);
+      expect(filterLanesByCondition([lane1], 1, 'at_end')).toEqual([lane1]);
+    });
+
+    it('at_end条件: 4匹の場合、pointer = 2 で抽出されること', () => {
+      const lane4 = { id: 'l4', cats: [catSmall, catMid, catBig, catHuge] };
+      expect(filterLanesByCondition([lane4], 1, 'at_end')).toEqual([]);
+      expect(filterLanesByCondition([lane4], 2, 'at_end')).toEqual([lane4]);
     });
   });
 });

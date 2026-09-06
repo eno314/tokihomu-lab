@@ -318,9 +318,63 @@ export const SIBERIAN_SVG = `
 </svg>
 `;
 
+// メインクーン（特大 / 4）のSVG
+export const MAINECOON_SVG = `
+<svg class="cat-svg mainecoon-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+  <!-- ボリューミーなふさふさの尾（左側から優雅に湾曲） -->
+  <path d="M 24,72 C 6,66 2,42 12,32 C 18,26 24,32 20,44 C 18,52 24,62 30,68 Z" fill="#546e7a" stroke="#37474f" stroke-width="1.2" />
+  <!-- ボリューミーな胴体（特大サイズ） -->
+  <ellipse cx="50" cy="65" rx="38" ry="29" fill="#607d8b" />
+  <path d="M 22,54 C 12,68 18,84 32,82 C 40,88 60,88 68,82 C 82,84 88,68 78,54 C 86,64 74,80 62,80 C 50,86 40,86 28,78 Z" fill="#455a64" />
+  <!-- 大きな手足（タフト付きの肉球） -->
+  <ellipse cx="34" cy="88" rx="10" ry="8" fill="#eceff1" stroke="#b0bec5" stroke-width="1.5" />
+  <ellipse cx="66" cy="88" rx="10" ry="8" fill="#eceff1" stroke="#b0bec5" stroke-width="1.5" />
+  <!-- ふさふさの胸毛（ゴージャスなラフ） -->
+  <path d="M 26,50 Q 50,76 74,50 Q 64,84 50,84 Q 36,84 26,50 Z" fill="#ffffff" />
+  <path d="M 32,54 Q 50,78 68,54" fill="none" stroke="#cfd8dc" stroke-width="2" stroke-linecap="round" />
+  <!-- 大きな耳（外側・リンクスティップ付き） -->
+  <polygon points="16,36 6,2 38,16" fill="#455a64" />
+  <polygon points="84,36 94,2 62,16" fill="#455a64" />
+  <!-- 耳の内側 -->
+  <polygon points="18,32 12,10 34,18" fill="#ffab91" />
+  <polygon points="82,32 88,10 66,18" fill="#ffab91" />
+  <!-- 耳先端の飾り毛（リンクスティップ） -->
+  <path d="M 6,2 L 2,-4 M 6,2 L 7,-6 M 6,2 L 11,-3 M 94,2 L 98,-4 M 94,2 L 93,-6 M 94,2 L 89,-3" stroke="#eceff1" stroke-width="2.2" stroke-linecap="round" />
+  <!-- 頭部ベース（大きめのマズル） -->
+  <ellipse cx="50" cy="40" rx="34" ry="27" fill="#78909c" />
+  <!-- 顔のタビー模様・サイドの豊かな飾り毛 -->
+  <path d="M 14,42 Q 26,48 18,56 Q 30,54 24,64 Q 38,58 38,50" fill="#eceff1" />
+  <path d="M 86,42 Q 74,48 82,56 Q 70,54 76,64 Q 62,58 62,50" fill="#eceff1" />
+  <!-- 額のM字タビー模様 -->
+  <path d="M 38,20 L 44,30 L 50,24 L 56,30 L 62,20" fill="none" stroke="#263238" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- ふっくらしたウィスカーパッド（マズル・白） -->
+  <ellipse cx="50" cy="47" rx="20" ry="14" fill="#ffffff" />
+  <!-- 堂々とした琥珀色の瞳 -->
+  <ellipse cx="35" cy="39" rx="8" ry="9" fill="#ffb300" />
+  <ellipse cx="35" cy="39" rx="4.8" ry="7" fill="#37474f" />
+  <circle cx="33" cy="36" r="2.5" fill="#ffffff" />
+  <circle cx="37.5" cy="41.5" r="1.3" fill="#ffffff" />
+  <ellipse cx="65" cy="39" rx="8" ry="9" fill="#ffb300" />
+  <ellipse cx="65" cy="39" rx="4.8" ry="7" fill="#37474f" />
+  <circle cx="63" cy="36" r="2.5" fill="#ffffff" />
+  <circle cx="67.5" cy="41.5" r="1.3" fill="#ffffff" />
+  <!-- 鼻（サーモンピンク） -->
+  <polygon points="46,47 54,47 50,52" fill="#ff8a80" />
+  <!-- 口元（ω） -->
+  <path d="M 43,53 Q 46.5,57 50,53 Q 53.5,57 57,53" fill="none" stroke="#37474f" stroke-width="2" stroke-linecap="round" />
+  <!-- 立派な白いヒゲ -->
+  <line x1="26" y1="51" x2="6" y2="48" stroke="#ffffff" stroke-width="2" stroke-linecap="round" />
+  <line x1="25" y1="56" x2="8" y2="59" stroke="#ffffff" stroke-width="2" stroke-linecap="round" />
+  <line x1="74" y1="51" x2="94" y2="48" stroke="#ffffff" stroke-width="2" stroke-linecap="round" />
+  <line x1="75" y1="56" x2="92" y2="59" stroke="#ffffff" stroke-width="2" stroke-linecap="round" />
+</svg>
+`;
+
 export function getCatSvg(type) {
   if (type === 'munchkin') return MUNCHKIN_SVG;
   if (type === 'americanshorthair') return AMERICAN_SHORTHAIR_SVG;
   if (type === 'siberian') return SIBERIAN_SVG;
+  if (type === 'mainecoon') return MAINECOON_SVG;
   return TOKI_SVG;
 }
+
