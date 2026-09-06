@@ -155,6 +155,39 @@ export const LEVELS_TOY = [
     ],
     startMessage: 'はこが 2つあるよ！ あけると エビ🦐 か トイレットペーパー🧻 がでてくるよ。「もし」ブロックをつかって エビだけをひろってね！',
     minBlocks: 8
+  },
+  {
+    id: 4,
+    name: 'レベル 4',
+    title: 'パトロール街道と ハテナの箱',
+    description: 'ハテナの箱が 3つあるよ！ エビと ボールの ぬいぐるみを あつめて トキにあいにいこう！',
+    gridSize: 5,
+    startX: 0,
+    startY: 2,
+    startDirection: 1,
+    startRotation: 90,
+    goalX: 4,
+    goalY: 2,
+    obstacles: [
+      { x: 0, y: 1 },
+      { x: 1, y: 1 },
+      { x: 2, y: 1 },
+      { x: 3, y: 1 },
+      { x: 4, y: 1 },
+      { x: 0, y: 3 },
+      { x: 1, y: 3 },
+      { x: 2, y: 3 },
+      { x: 3, y: 3 },
+      { x: 4, y: 3 }
+    ],
+    hasRandomBoxes: true,
+    toys: [
+      { id: 'box-1', x: 1, y: 2, isBox: true, isOpened: false, icon: '🦐', name: 'エビのぬいぐるみ', isTrap: false },
+      { id: 'box-2', x: 2, y: 2, isBox: true, isOpened: false, icon: '🧻', name: 'トイレットペーパー', isTrap: true },
+      { id: 'box-3', x: 3, y: 2, isBox: true, isOpened: false, icon: '🎾', name: 'ボールのぬいぐるみ', isTrap: false }
+    ],
+    startMessage: 'ハテナのはこが 3つあるよ！「くりかえし」のなかに「もし」をいれて、エビ🦐とボール🎾をあつめてね！🧻はひろっちゃダメだよ！',
+    minBlocks: 7
   }
 ];
 

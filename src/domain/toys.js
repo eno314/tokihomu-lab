@@ -78,17 +78,19 @@ export function openBoxAt(toys = [], x, y) {
   return { newToys, openedBox };
 }
 
-function swapBoxPair(boxes) {
-  const [first, second] = boxes;
-  return [
-    { ...first, icon: second.icon, name: second.name, isTrap: second.isTrap },
-    { ...second, icon: first.icon, name: first.name, isTrap: first.isTrap }
-  ];
+function rotateContents(contents, shiftCount) {
+  return [...contents.slice(shiftCount), ...contents.slice(0, shiftCount)];
+}
+
+function applyShiftedContents(boxes, shiftedContents) {
+  return boxes.map((toy, i) => ({ ...toy, ...shiftedContents[i] }));
 }
 
 export function shuffleBoxes(toys = [], shouldSwap = false) {
   const resetToys = toys.map(t => ({ ...t, isOpened: t.isBox ? false : t.isOpened }));
   if (!shouldSwap || resetToys.length < 2) return resetToys;
-  const [swappedA, swappedB] = swapBoxPair(resetToys);
-  return [swappedA, swappedB, ...resetToys.slice(2)];
+  const shift = typeof shouldSwap === 'number' ? shouldSwap % resetToys.length : 1;
+  if (shift === 0) return resetToys;
+  const contents = resetToys.map(t => ({ icon: t.icon, name: t.name, isTrap: t.isTrap }));
+  return applyShiftedContents(resetToys, rotateContents(contents, shift));
 }
