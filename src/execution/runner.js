@@ -9,6 +9,7 @@ import { updateTokiPosition, updateToysDisplay, updateToyCounterDisplay, updateG
 import { getNextPosition, turn, checkCollision } from '../domain/movement.js';
 import { stepHomura, checkGoalReached } from '../domain/goal.js';
 import { pickupToy, openBoxAt } from '../domain/toys.js';
+import { checkCondition } from '../domain/condition.js';
 import { onGoalReached } from '../ui/modal.js';
 import { runSortProgram, sleep } from './sort-runner.js';
 import { getCommandsFromWorkspace } from '../blockly/parser.js';
@@ -153,12 +154,18 @@ async function executePickup(cmd, ctx) {
 
 async function executeIf(cmd, ctx) {
   const curState = store.getState();
-  const currentToy = curState.toys.find(
-    t => t.x === curState.x && t.y === curState.y &&
-      !curState.collectedToys.includes(t.id) &&
-      !(curState.collectedTraps && curState.collectedTraps.includes(t.id))
-  );
-  const matches = currentToy && currentToy.icon === cmd.conditionItem;
+  const matches = checkCondition({
+    x: curState.x,
+    y: curState.y,
+    direction: curState.direction,
+    target: cmd.target || 'feet',
+    conditionItem: cmd.conditionItem,
+    obstacles: curState.obstacles,
+    toys: curState.toys,
+    collectedToys: curState.collectedToys,
+    collectedTraps: curState.collectedTraps
+  });
+
   if (matches) {
     await ctx.executeCommandList(cmd.branch);
     return { isBranch: true };

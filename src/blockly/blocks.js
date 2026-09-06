@@ -70,7 +70,11 @@ export function registerCustomBlocks() {
           ['5', '5'],
           ['6', '6'],
           ['7', '7'],
-          ['8', '8']
+          ['8', '8'],
+          ['9', '9'],
+          ['10', '10'],
+          ['11', '11'],
+          ['12', '12']
         ]), 'TIMES')
         .appendField('かい くりかえす 🔁');
       this.appendStatementInput('DO')
@@ -86,8 +90,15 @@ export function registerCustomBlocks() {
   Blockly.Blocks['toki_if'] = {
     init: function () {
       this.appendDummyInput()
-        .appendField('もし あしもとが')
+        .appendField('もし')
         .appendField(new Blockly.FieldDropdown([
+          ['あしもと', 'feet'],
+          ['めのまえ', 'front']
+        ]), 'TARGET')
+        .appendField('が')
+        .appendField(new Blockly.FieldDropdown([
+          ['おもちゃ', 'toy'],
+          ['ダンボール', 'obstacle'],
           ['🦐 エビ', '🦐'],
           ['🎾 ボール', '🎾'],
           ['🧻 かみ', '🧻']
@@ -98,7 +109,7 @@ export function registerCustomBlocks() {
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour('#ab47bc');
-      this.setTooltip('あしもとにあるものが していしたものなら、なかのブロックをじっこうします');
+      this.setTooltip('あしもと や めのまえ に あるものが していしたものなら、なかのブロックをじっこうします');
     }
   };
 

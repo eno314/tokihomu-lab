@@ -159,34 +159,27 @@ export const LEVELS_TOY = [
   {
     id: 4,
     name: 'レベル 4',
-    title: 'パトロール街道と ハテナの箱',
-    description: 'ハテナの箱が 3つあるよ！ エビと ボールの ぬいぐるみを あつめて トキにあいにいこう！',
+    title: 'ハテナの箱と ダンボールパトロール',
+    description: 'ダンボールを みつけたら まがって、おもちゃを ぜんぶ あつめて トキにあいにいこう！',
     gridSize: 5,
     startX: 0,
-    startY: 2,
+    startY: 0,
     startDirection: 1,
     startRotation: 90,
-    goalX: 4,
-    goalY: 2,
+    goalX: 1,
+    goalY: 1,
     obstacles: [
-      { x: 0, y: 1 },
-      { x: 1, y: 1 },
-      { x: 2, y: 1 },
-      { x: 3, y: 1 },
-      { x: 4, y: 1 },
-      { x: 0, y: 3 },
-      { x: 1, y: 3 },
-      { x: 2, y: 3 },
-      { x: 3, y: 3 },
-      { x: 4, y: 3 }
+      { x: 4, y: 0 },
+      { x: 3, y: 4 },
+      { x: 0, y: 3 }
     ],
-    hasRandomBoxes: true,
+    hasRandomBoxes: false,
     toys: [
-      { id: 'box-1', x: 1, y: 2, isBox: true, isOpened: false, icon: '🦐', name: 'エビのぬいぐるみ', isTrap: false },
-      { id: 'box-2', x: 2, y: 2, isBox: true, isOpened: false, icon: '🧻', name: 'トイレットペーパー', isTrap: true },
-      { id: 'box-3', x: 3, y: 2, isBox: true, isOpened: false, icon: '🎾', name: 'ボールのぬいぐるみ', isTrap: false }
+      { id: 'box-1', x: 2, y: 0, isBox: true, isOpened: false, icon: '🦐', name: 'エビのぬいぐるみ', isTrap: false },
+      { id: 'box-2', x: 3, y: 2, isBox: true, isOpened: false, icon: '🎾', name: 'ボールのぬいぐるみ', isTrap: false },
+      { id: 'box-3', x: 2, y: 3, isBox: true, isOpened: false, icon: '🧸', name: 'くまのぬいぐるみ', isTrap: false }
     ],
-    startMessage: 'ハテナのはこが 3つあるよ！「くりかえし」のなかに「もし」をいれて、エビ🦐とボール🎾をあつめてね！🧻はひろっちゃダメだよ！',
+    startMessage: 'ダンボールが 3つ、はこが 3つ あるよ！「めのまえが ダンボールなら」まがって、「あしもとが おもちゃなら」ひろってね！',
     minBlocks: 7
   }
 ];
