@@ -60,6 +60,7 @@
           <div class="mode-tabs" id="mode-tabs">
             <button class="mode-tab active" data-mode="chase">🐾 おにごっこ</button>
             <button class="mode-tab" data-mode="toy">🦐 ぬいぐるみあつめ</button>
+            <button class="mode-tab" data-mode="sort">🐱 おおきさくらべ</button>
           </div>
         </div>
 
@@ -117,13 +118,14 @@
             <span class="legend-item" id="legend-goal">🎯 ゴール: ホムラ (🐈)</span>
             <span class="legend-item legend-toy" id="legend-toy" style="display: none;">🦐 ぬいぐるみ</span>
             <span class="legend-item legend-obstacle" id="legend-obstacle" style="display: none;">📦 ダンボール</span>
+            <span class="legend-item legend-sort" id="legend-sort" style="display: none;">🐱 ちいさいじゅんに ならべよう！</span>
             <span class="toy-counter-badge" id="toy-counter" style="display: none;">
               <span class="toy-counter-icon">🦐</span>
               <span class="toy-counter-text" id="toy-counter-text">0 / 0</span>
             </span>
           </div>
 
-          <div class="grid-wrapper">
+          <div class="grid-wrapper" id="grid-wrapper">
             <div id="grid-board" class="grid-board">
               <!-- JavaScriptで5x5のセルを動的生成 -->
             </div>
@@ -161,6 +163,11 @@
               </div>
               <div class="character-arrow">▲</div>
             </div>
+          </div>
+
+          <!-- おおきさくらべ専用ステージ -->
+          <div id="sort-stage" class="sort-stage-wrapper" style="display: none;">
+            <!-- JSでレーン（トキ組、ホムラ組）を動的生成 -->
           </div>
         </div>
 
@@ -226,6 +233,43 @@
     </category>
     <category name="❓ じょうけん" colour="#ab47bc">
       <block type="toki_if"></block>
+    </category>
+  </xml>
+
+  <!-- おおきさくらべモード用 (レベル1: 3ブロックのみ) -->
+  <xml id="toolbox-sort-lv1" style="display: none">
+    <category name="🐱 ならびかえ" colour="#2196f3">
+      <block type="sort_swap"></block>
+      <block type="sort_step_next"></block>
+      <block type="sort_reset_pointer"></block>
+    </category>
+  </xml>
+
+  <!-- おおきさくらべモード用 (レベル2: くりかえし・じょうけん付き) -->
+  <xml id="toolbox-sort-lv2" style="display: none">
+    <category name="❓ じょうけん" colour="#ab47bc">
+      <block type="sort_if"></block>
+    </category>
+    <category name="✋ アクション" colour="#e91e63">
+      <block type="sort_swap"></block>
+    </category>
+    <category name="🐾 うごき" colour="#ff9800">
+      <block type="sort_step_next"></block>
+      <block type="sort_reset_pointer"></block>
+    </category>
+    <category name="🔁 くりかえし" colour="#4caf50">
+      <block type="toki_repeat">
+        <field name="TIMES">2</field>
+      </block>
+    </category>
+  </xml>
+
+  <!-- おおきさくらべモード用 (互換用デフォルト: 3ブロック) -->
+  <xml id="toolbox-sort" style="display: none">
+    <category name="🐱 ならびかえ" colour="#2196f3">
+      <block type="sort_swap"></block>
+      <block type="sort_step_next"></block>
+      <block type="sort_reset_pointer"></block>
     </category>
   </xml>
 
