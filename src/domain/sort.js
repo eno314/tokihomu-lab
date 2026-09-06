@@ -69,16 +69,24 @@ export function stepSortPointer(currentPointer, maxPointer) {
 }
 
 /**
- * 条件（左 > 右）を満たすレーンを抽出する (純粋関数)
+ * 条件（左 > 右、または 一番後ろ）を満たすレーンを抽出する (純粋関数)
  * @param {Array<Object>} lanes
  * @param {number} pointer
+ * @param {'greater' | 'at_end' | string} [condition='greater']
  * @returns {Array<Object>}
  */
-export function filterLanesByCondition(lanes = [], pointer) {
+export function filterLanesByCondition(lanes = [], pointer, condition = 'greater') {
+  const isAtEnd = condition === 'at_end' || condition === 'いちばんうしろ';
+
   return lanes.filter(lane => {
+    if (!lane || !lane.cats || lane.cats.length <= 1) return false;
+    if (isAtEnd) {
+      return pointer >= lane.cats.length - 2;
+    }
     return (
       pointer < lane.cats.length - 1 &&
       lane.cats[pointer].size > lane.cats[pointer + 1].size
     );
   });
 }
+

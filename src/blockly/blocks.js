@@ -113,17 +113,43 @@ export function registerCustomBlocks() {
     }
   };
 
-  // --- もし ひだり ＞ みぎ なら (ソート用) ---
+  // --- もし {ひだり＞みぎ | いちばんうしろ} なら これをする (ソート用) ---
   Blockly.Blocks['sort_if'] = {
     init: function () {
       this.appendDummyInput()
-        .appendField('もし [ ひだり ＞ みぎ ] なら');
+        .appendField('もし')
+        .appendField(new Blockly.FieldDropdown([
+          ['ひだり＞みぎ', 'greater'],
+          ['いちばんうしろ', 'at_end']
+        ]), 'CONDITION')
+        .appendField('なら');
       this.appendStatementInput('DO')
         .appendField('これをする');
       this.setPreviousStatement(true, null);
       this.setNextStatement(true, null);
       this.setColour('#ab47bc');
-      this.setTooltip('ひだりのねこが みぎのねこより おおきいときに、なかのブロックをじっこうします');
+      this.setTooltip('していした じょうけん（ひだり＞みぎ、または いちばんうしろ）を みたしているときに、なかのブロックをじっこうします');
+    }
+  };
+
+  // --- もし {ひだり＞みぎ | いちばんうしろ} なら これをする / そうでなければ (ソート用) ---
+  Blockly.Blocks['sort_if_else'] = {
+    init: function () {
+      this.appendDummyInput()
+        .appendField('もし')
+        .appendField(new Blockly.FieldDropdown([
+          ['ひだり＞みぎ', 'greater'],
+          ['いちばんうしろ', 'at_end']
+        ]), 'CONDITION')
+        .appendField('なら');
+      this.appendStatementInput('DO')
+        .appendField('これをする');
+      this.appendStatementInput('ELSE')
+        .appendField('そうでなければ');
+      this.setPreviousStatement(true, null);
+      this.setNextStatement(true, null);
+      this.setColour('#ab47bc');
+      this.setTooltip('していした じょうけんを みたしているときは「これをする」、みたしていないときは「そうでなければ」を じっこうします');
     }
   };
 
@@ -231,7 +257,13 @@ export function updateToolboxForCurrentState(workspace) {
   if (state.currentMode === 'toy') {
     toolboxId = 'toolbox-toy';
   } else if (state.currentMode === 'sort') {
-    toolboxId = state.currentLevel === 1 ? 'toolbox-sort-lv1' : 'toolbox-sort-lv2';
+    if (state.currentLevel === 1) {
+      toolboxId = 'toolbox-sort-lv1';
+    } else if (state.currentLevel === 2) {
+      toolboxId = 'toolbox-sort-lv2';
+    } else {
+      toolboxId = 'toolbox-sort-lv3';
+    }
   }
 
   const toolboxEl = document.getElementById(toolboxId) || document.getElementById('toolbox-sort');

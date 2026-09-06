@@ -53,23 +53,64 @@ async function executeSortSwap(cmd, ctx) {
   await sleep(Math.min(250, ctx.delay));
 }
 
+function getSortIfSkipMessage(condition) {
+  if (condition === 'at_end' || condition === 'いちばんうしろ') {
+    return '「まだ いちばんうしろ じゃないから そのままでOKニャ！」';
+  }
+  return '「ひだりのほうが ちいさい（または おなじ）から そのままでOKニャ！」';
+}
+
+function getSortIfMatchMessage(condition, names) {
+  if (condition === 'at_end' || condition === 'いちばんうしろ') {
+    return `「いちばんうしろニャ！（${names}） なかのブロックを じっこうするよ！」`;
+  }
+  return `「ひだりのほうが おおきいニャ！（${names}） なかのブロックを じっこうするよ！」`;
+}
+
 async function executeSortIf(cmd, ctx) {
   const state = store.getState();
   const lanes = ctx.activeLaneIds
     ? state.sortLanes.filter(l => ctx.activeLaneIds.includes(l.id))
     : state.sortLanes;
-  const matching = filterLanesByCondition(lanes, state.sortPointer);
+  const condition = cmd.condition || 'greater';
+  const matching = filterLanesByCondition(lanes, state.sortPointer, condition);
 
   if (matching.length === 0) {
-    setMessage('「ひだりのほうが ちいさい（または おなじ）から そのままでOKニャ！」', 'toki');
+    setMessage(getSortIfSkipMessage(condition), 'toki');
     await sleep(Math.min(300, ctx.delay));
     return;
   }
 
   const names = matching.map(l => l.name).join(' と ');
-  setMessage(`「ひだりのほうが おおきいニャ！（${names}） なかのブロックを じっこうするよ！」`, 'toki');
+  setMessage(getSortIfMatchMessage(condition, names), 'toki');
   await sleep(Math.min(300, ctx.delay));
   await ctx.executeCommands(cmd.branch, matching.map(l => l.id));
+}
+
+async function executeSortIfElse(cmd, ctx) {
+  const state = store.getState();
+  const lanes = ctx.activeLaneIds
+    ? state.sortLanes.filter(l => ctx.activeLaneIds.includes(l.id))
+    : state.sortLanes;
+  const condition = cmd.condition || 'greater';
+  const matching = filterLanesByCondition(lanes, state.sortPointer, condition);
+  const matchingIds = matching.map(l => l.id);
+  const nonMatchingIds = lanes.filter(l => !matchingIds.includes(l.id)).map(l => l.id);
+
+  if (matchingIds.length > 0 && cmd.branch && cmd.branch.length > 0) {
+    const names = matching.map(l => l.name).join(' と ');
+    setMessage(getSortIfMatchMessage(condition, names), 'toki');
+    await sleep(Math.min(300, ctx.delay));
+    await ctx.executeCommands(cmd.branch, matchingIds);
+  }
+
+  if (nonMatchingIds.length > 0 && cmd.elseBranch && cmd.elseBranch.length > 0) {
+    const nonMatching = lanes.filter(l => nonMatchingIds.includes(l.id));
+    const names = nonMatching.map(l => l.name).join(' と ');
+    setMessage(`「そうでないニャ！（${names}） なかのブロックを じっこうするよ！」`, 'toki');
+    await sleep(Math.min(300, ctx.delay));
+    await ctx.executeCommands(cmd.elseBranch, nonMatchingIds);
+  }
 }
 
 async function executeSortStepNext(cmd, ctx) {
@@ -101,6 +142,7 @@ async function executeSortResetPointer(cmd, ctx) {
 
 const SORT_COMMAND_EXECUTORS = {
   SORT_IF: executeSortIf,
+  SORT_IF_ELSE: executeSortIfElse,
   SORT_SWAP: executeSortSwap,
   SORT_COMPARE_SWAP: executeSortSwap,
   SORT_STEP_NEXT: executeSortStepNext,
