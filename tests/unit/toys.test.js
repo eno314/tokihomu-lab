@@ -91,5 +91,23 @@ describe('toys domain logic', () => {
       expect(swapped[0].isOpened).toBe(false);
       expect(swapped[1].isOpened).toBe(false);
     });
+
+    it('3つ以上の箱がある場合に中身がローテーションして入れ替わること', () => {
+      const boxes = [
+        { id: 'b1', isBox: true, isOpened: true, icon: '🦐', name: 'エビ', isTrap: false },
+        { id: 'b2', isBox: true, isOpened: true, icon: '🧻', name: '紙', isTrap: true },
+        { id: 'b3', isBox: true, isOpened: true, icon: '🎾', name: 'ボール', isTrap: false }
+      ];
+      const swapped1 = shuffleBoxes(boxes, 1);
+      expect(swapped1[0].icon).toBe('🧻');
+      expect(swapped1[1].icon).toBe('🎾');
+      expect(swapped1[2].icon).toBe('🦐');
+      expect(swapped1.every(b => !b.isOpened)).toBe(true);
+
+      const swapped2 = shuffleBoxes(boxes, 2);
+      expect(swapped2[0].icon).toBe('🎾');
+      expect(swapped2[1].icon).toBe('🦐');
+      expect(swapped2[2].icon).toBe('🧻');
+    });
   });
 });

@@ -297,7 +297,7 @@ export function updateModeUI() {
 }
 
 const LEVEL_ICONS = {
-  toy: { 1: '🦐', 2: '🎾', 3: '🎁' },
+  toy: { 1: '🦐', 2: '🎾', 3: '🎁', 4: '👑' },
   sort: { 1: '🌟', 2: '👑' },
   chase: { 1: '🌟', 2: '📦', 3: '🐾', 4: '👑' }
 };

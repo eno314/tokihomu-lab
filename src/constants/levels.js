@@ -155,6 +155,32 @@ export const LEVELS_TOY = [
     ],
     startMessage: 'はこが 2つあるよ！ あけると エビ🦐 か トイレットペーパー🧻 がでてくるよ。「もし」ブロックをつかって エビだけをひろってね！',
     minBlocks: 8
+  },
+  {
+    id: 4,
+    name: 'レベル 4',
+    title: 'ハテナの箱と ダンボールパトロール',
+    description: 'ダンボールを みつけたら まがって、おもちゃを ぜんぶ あつめて トキにあいにいこう！',
+    gridSize: 5,
+    startX: 0,
+    startY: 0,
+    startDirection: 1,
+    startRotation: 90,
+    goalX: 1,
+    goalY: 1,
+    obstacles: [
+      { x: 4, y: 0 },
+      { x: 3, y: 4 },
+      { x: 0, y: 3 }
+    ],
+    hasRandomBoxes: false,
+    toys: [
+      { id: 'box-1', x: 2, y: 0, isBox: true, isOpened: false, icon: '🦐', name: 'エビのぬいぐるみ', isTrap: false },
+      { id: 'box-2', x: 3, y: 2, isBox: true, isOpened: false, icon: '🎾', name: 'ボールのぬいぐるみ', isTrap: false },
+      { id: 'box-3', x: 2, y: 3, isBox: true, isOpened: false, icon: '🧸', name: 'くまのぬいぐるみ', isTrap: false }
+    ],
+    startMessage: 'ダンボールが 3つ、はこが 3つ あるよ！「めのまえが ダンボールなら」まがって、「あしもとが おもちゃなら」ひろってね！',
+    minBlocks: 7
   }
 ];
 

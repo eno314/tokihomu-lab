@@ -35,9 +35,9 @@ test.describe('おもちゃあつめモード UIテスト', () => {
     await expect(page.locator('#legend-start')).toHaveText('🚩 スタート: ホムラ (🐈)');
     await expect(page.locator('#legend-goal')).toHaveText('🎯 ゴール: トキ (🐾)');
 
-    // レベルボタンがおもちゃモード用（レベル1, 2, 3）になる
+    // レベルボタンがおもちゃモード用（レベル1, 2, 3, 4）になる
     const levelBtns = page.locator('.level-btn');
-    await expect(levelBtns).toHaveCount(3);
+    await expect(levelBtns).toHaveCount(4);
 
     // レベル2に切り替え
     const level2Btn = page.locator('.level-btn[data-level="2"]');
@@ -314,5 +314,79 @@ test.describe('おもちゃあつめモード UIテスト', () => {
 
     // クリアモーダルは表示されない
     await expect(page.locator('#victory-modal')).toHaveClass(/hidden/);
+  });
+
+  test('おもちゃあつめモード レベル4: 盤面配置（3つの箱・3つのダンボール）が正しく初期化されること', async ({ page }) => {
+    await page.locator('.mode-tab[data-mode="toy"]').click();
+    const level4Btn = page.locator('.level-btn[data-level="4"]');
+    await expect(level4Btn).toBeVisible();
+    await expect(level4Btn).toContainText('👑 レベル 4');
+    await level4Btn.click();
+    await expect(level4Btn).toHaveClass(/active/);
+
+    // おもちゃカウンターは 0 / 3
+    await expect(page.locator('#toy-counter-text')).toHaveText('0 / 3');
+
+    // 盤面に3つの箱が表示されていること
+    const boxCells = page.locator('.toy-cell');
+    await expect(boxCells).toHaveCount(3);
+
+    // 障害物セルが3個あること
+    const obstacleCells = page.locator('.obstacle-cell');
+    await expect(obstacleCells).toHaveCount(3);
+  });
+
+  test('おもちゃあつめモード レベル4: センサー型条件分岐（めのまえダンボール / あしもとおもちゃ）でクリアでき、かんぺき評価になること', async ({ page }) => {
+    await page.locator('.mode-tab[data-mode="toy"]').click();
+    await page.selectOption('#speed-select', '250');
+    await page.locator('.level-btn[data-level="4"]').click();
+
+    // 6ブロックのスマート解:
+    // 10かい くりかえす
+    //   もし [めのまえ] が [ダンボール] なら
+    //     みぎを むく
+    //   まえに 1マス すすむ
+    //   もし [あしもと] が [おもちゃ] なら
+    //     ぬいぐるみを ひろう
+    await page.evaluate(() => {
+      workspace.clear();
+      const repeatBlock = workspace.newBlock('toki_repeat');
+      repeatBlock.setFieldValue('10', 'TIMES');
+
+      const ifObstacle = workspace.newBlock('toki_if');
+      ifObstacle.setFieldValue('front', 'TARGET');
+      ifObstacle.setFieldValue('obstacle', 'ITEM');
+      const turnRight = workspace.newBlock('toki_turn_right');
+      ifObstacle.getInput('DO').connection.connect(turnRight.previousConnection);
+
+      const move = workspace.newBlock('toki_move');
+
+      const ifToy = workspace.newBlock('toki_if');
+      ifToy.setFieldValue('feet', 'TARGET');
+      ifToy.setFieldValue('toy', 'ITEM');
+      const pickup = workspace.newBlock('toki_pickup');
+      ifToy.getInput('DO').connection.connect(pickup.previousConnection);
+
+      ifObstacle.nextConnection.connect(move.previousConnection);
+      move.nextConnection.connect(ifToy.previousConnection);
+
+      repeatBlock.getInput('DO').connection.connect(ifObstacle.previousConnection);
+
+      [repeatBlock, ifObstacle, turnRight, move, ifToy, pickup].forEach(b => {
+        b.initSvg();
+        b.render();
+      });
+    });
+
+    await page.locator('#run-btn').click();
+
+    // 3つのおもちゃが全回収されてカウンターが「3 / 3」になること
+    await expect(page.locator('#toy-counter-text')).toHaveText('3 / 3', { timeout: 20000 });
+
+    // ゴール達成モーダルが表示され、かんぺき評価（eval-perfect）であること
+    const victoryModal = page.locator('#victory-modal');
+    await expect(victoryModal).not.toHaveClass(/hidden/, { timeout: 20000 });
+    await expect(page.locator('.eval-perfect')).toBeVisible();
+    await expect(page.locator('#victory-title')).toContainText('かんぺき');
   });
 });

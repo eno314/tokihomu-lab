@@ -105,14 +105,17 @@ export function applyLoadLevel(prevState, levelId, mode = prevState.currentMode)
   return createGridLevelState(prevState, level, mode);
 }
 
-function resolveResetToys(level) {
-  const shouldSwap = typeof window !== 'undefined' && window.__forceBoxSwap !== undefined
-    ? !!window.__forceBoxSwap
-    : Math.random() < 0.5;
+function resolveSwapValue(boxCount) {
+  if (typeof window !== 'undefined' && window.__forceBoxSwap !== undefined) {
+    return window.__forceBoxSwap;
+  }
+  return boxCount <= 2 ? Math.random() < 0.5 : Math.floor(Math.random() * boxCount);
+}
 
+function resolveResetToys(level) {
   const baseToys = (level.toys || []).map(t => ({ ...t }));
   if (!level.hasRandomBoxes) return baseToys;
-  return shuffleBoxesPure(baseToys, shouldSwap);
+  return shuffleBoxesPure(baseToys, resolveSwapValue(baseToys.length));
 }
 
 function resetSortState(prevState, level) {

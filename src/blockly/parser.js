@@ -17,9 +17,11 @@ const BLOCK_PARSERS = {
   toki_turn_left: (block) => [{ type: 'TURN_LEFT', blockId: block.id }],
   toki_pickup: (block) => [{ type: 'PICKUP', blockId: block.id }],
   toki_if: (block, traverseFn) => {
-    const item = (typeof block.getFieldValue === 'function' ? block.getFieldValue('ITEM') : null) || '🦐';
+    const target = (typeof block.getFieldValue === 'function' ? block.getFieldValue('TARGET') : null) || 'feet';
+    const item = (typeof block.getFieldValue === 'function' ? block.getFieldValue('ITEM') : null) || 'toy';
     return [{
       type: 'IF',
+      target,
       conditionItem: item,
       branch: extractBranchCommands(block, traverseFn),
       blockId: block.id
