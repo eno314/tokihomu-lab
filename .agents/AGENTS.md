@@ -46,5 +46,6 @@ podman run --rm -v $(pwd):/work -w /work mcr.microsoft.com/playwright:v1.62.1-ja
 
 ## 3. 実装・検証方針
 - すべての実装・不具合修正後は、必ず上記の Podman を用いたユニットテストおよび Playwright テストを実行して回帰がないことを確認してください。
+- コードの実装・設計・リファクタリングにあたっては、必ず [implementation_policy.md](./implementation_policy.md) の各原則（データ駆動設計、純粋関数、10行ルール、No else、ネスト制限等）を遵守してください。
 - ユーザーへの報告やドキュメント、実装計画は日本語で記述してください。
 
