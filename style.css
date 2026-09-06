@@ -196,6 +196,12 @@ body {
   box-shadow: 0 2px 8px rgba(244, 81, 30, 0.35);
 }
 
+.mode-tab[data-mode="sort"].active {
+  background: linear-gradient(135deg, #8e24aa 0%, #6a1b9a 100%);
+  border-color: #4a148c;
+  box-shadow: 0 2px 8px rgba(142, 36, 170, 0.35);
+}
+
 /* レベル選択カード */
 .level-select-card {
   background: var(--card-bg);
@@ -920,8 +926,265 @@ body {
   .workspace-panel {
     height: 480px;
   }
-  .grid-wrapper {
+  .grid-wrapper,
+  .sort-stage-wrapper {
     width: 280px;
     height: 280px;
   }
+  .sort-stage-wrapper.level-2,
+  .sort-stage-wrapper.two-lanes {
+    height: 440px;
+  }
+}
+
+/* ===================================================
+   おおきさくらべ（ソートモード）スタイル
+   =================================================== */
+.legend-item.legend-sort {
+  background: #f3e5f5;
+  color: #6a1b9a;
+  border-color: #ce93d8;
+}
+
+.sort-stage-wrapper {
+  position: relative;
+  width: 320px;
+  height: 320px;
+  border: 4px solid #8d6e63;
+  border-radius: var(--radius-md);
+  background: linear-gradient(180deg, #fff8e7 0%, #ffe0b2 100%);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  transition: height 0.3s ease;
+}
+
+/* レベル2 (2レーン並列表示時): 縦に長くして全体がゆったり見えるように */
+.sort-stage-wrapper.level-2,
+.sort-stage-wrapper.two-lanes {
+  height: 460px;
+  padding: 12px 10px;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sort-stage-wrapper.level-2 .sort-lane,
+.sort-stage-wrapper.two-lanes .sort-lane {
+  padding: 8px 10px;
+  gap: 6px;
+}
+
+.sort-stage-wrapper.level-2 .sort-cats-row,
+.sort-stage-wrapper.two-lanes .sort-cats-row {
+  min-height: 96px;
+  padding-bottom: 28px;
+}
+
+.sort-lane {
+  background: rgba(255, 255, 255, 0.92);
+  border: 2px solid #ffb74d;
+  border-radius: var(--radius-md);
+  padding: 6px 10px;
+  box-shadow: 0 2px 6px rgba(100, 60, 20, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sort-lane.single-lane {
+  padding: 12px 14px;
+  gap: 12px;
+}
+
+.sort-lane-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #bf360c;
+  border-bottom: 1.5px dashed #ffe0b2;
+  padding-bottom: 3px;
+}
+
+.sort-lane-status {
+  font-size: 0.75rem;
+  padding: 1px 6px;
+  border-radius: 8px;
+  font-weight: 800;
+}
+
+.sort-lane-status.is-sorted {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #a5d6a7;
+}
+
+.sort-lane-status.not-sorted {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.sort-cats-row {
+  display: flex;
+  justify-content: space-around;
+  align-items: flex-end;
+  position: relative;
+  min-height: 80px;
+  padding-bottom: 24px;
+}
+
+.single-lane .sort-cats-row {
+  min-height: 120px;
+  padding-bottom: 32px;
+}
+
+.sort-cat-slot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  width: 76px;
+  border-radius: 10px;
+  padding: 4px 2px;
+  transition: all 0.25s ease;
+}
+
+.sort-cat-slot.focus-cat {
+  background: rgba(255, 238, 88, 0.35);
+  box-shadow: 0 0 0 2px #fbc02d;
+}
+
+.sort-cat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  transition: transform 0.3s ease;
+}
+
+.sort-cat-item.cat-swapping {
+  animation: cat-jump-swap 0.45s ease-in-out;
+}
+
+@keyframes cat-jump-swap {
+  0% { transform: translateY(0) scale(1); }
+  45% { transform: translateY(-24px) scale(1.15); }
+  100% { transform: translateY(0) scale(1); }
+}
+
+.sort-cat-svg {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.18));
+}
+
+.sort-cat-svg svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.sort-cat-munchkin {
+  width: 50px;
+  height: 50px;
+}
+
+.single-lane .sort-cat-munchkin {
+  width: 72px;
+  height: 72px;
+}
+
+.sort-cat-americanshorthair {
+  width: 60px;
+  height: 60px;
+}
+
+.single-lane .sort-cat-americanshorthair {
+  width: 86px;
+  height: 86px;
+}
+
+.sort-cat-siberian {
+  width: 70px;
+  height: 70px;
+}
+
+.single-lane .sort-cat-siberian {
+  width: 102px;
+  height: 102px;
+}
+
+.cat-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 10px;
+  margin-top: 2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.cat-badge-munchkin {
+  background: #e1f5fe;
+  color: #0277bd;
+  border: 1px solid #81d4fa;
+}
+
+.cat-badge-americanshorthair {
+  background: #ede7f6;
+  color: #512da8;
+  border: 1px solid #b39ddb;
+}
+
+.cat-badge-siberian {
+  background: #fff3e0;
+  color: #e65100;
+  border: 1px solid #ffb74d;
+}
+
+/* 監督猫（カーソル役）ポインターバー */
+.sort-pointer-bar {
+  position: absolute;
+  bottom: 2px;
+  left: 0;
+  width: 100%;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  pointer-events: none;
+}
+
+.sort-supervisor-indicator {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateX(-50%);
+}
+
+.supervisor-mini-avatar {
+  width: 22px;
+  height: 22px;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.25));
+}
+
+.supervisor-bracket {
+  font-size: 0.65rem;
+  font-weight: 800;
+  background: #fff59d;
+  color: #424242;
+  border: 1px solid #fbc02d;
+  padding: 1px 6px;
+  border-radius: 8px;
+  white-space: nowrap;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
