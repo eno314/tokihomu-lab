@@ -3,52 +3,52 @@ import { evaluateClear } from '../../src/domain/scoring.js';
 
 describe('scoring domain logic', () => {
   describe('evaluateClear', () => {
-    it('usedBlocks <= minBlocks の場合、isPerfectがtrueとなり称賛メッセージが生成されること', () => {
-      const result = evaluateClear({
-        mode: 'chase',
-        usedBlocks: 5,
-        minBlocks: 5
-      });
+    const cases = [
+      {
+        name: 'usedBlocks <= minBlocks で完璧評価',
+        input: { mode: 'chase', usedBlocks: 5, minBlocks: 5 },
+        expected: {
+          isPerfect: true,
+          titleIncludes: 'かんぺき！',
+          badgeClassIncludes: 'eval-perfect',
+          bubbleIncludes: '完璧なプログラム'
+        }
+      },
+      {
+        name: 'usedBlocks > minBlocks で改善ヒント',
+        input: { mode: 'chase', usedBlocks: 7, minBlocks: 5 },
+        expected: {
+          isPerfect: false,
+          titleIncludes: 'タッチ！ つかまえたよ！',
+          badgeClassIncludes: 'eval-can-improve',
+          badgeTextIncludes: 'もっと短くできるよ！'
+        }
+      },
+      {
+        name: 'おもちゃあつめモード専用タイトル',
+        input: { mode: 'toy', usedBlocks: 10, minBlocks: 11 },
+        expected: {
+          isPerfect: true,
+          titleIncludes: 'ぬいぐるみを ぜんぶ とどけたよ'
+        }
+      },
+      {
+        name: 'おおきさくらべモード専用タイトル',
+        input: { mode: 'sort', usedBlocks: 5, minBlocks: 5 },
+        expected: {
+          isPerfect: true,
+          titleIncludes: 'きれいに ならんだよ'
+        }
+      }
+    ];
 
-      expect(result.isPerfect).toBe(true);
-      expect(result.victoryTitle).toContain('かんぺき！');
-      expect(result.evalBadgeClass).toContain('eval-perfect');
-      expect(result.bubbleMessage).toContain('完璧なプログラム');
-    });
-
-    it('usedBlocks > minBlocks の場合、isPerfectがfalseとなり改善ヒントメッセージが生成されること', () => {
-      const result = evaluateClear({
-        mode: 'chase',
-        usedBlocks: 7,
-        minBlocks: 5
-      });
-
-      expect(result.isPerfect).toBe(false);
-      expect(result.victoryTitle).toContain('タッチ！ つかまえたよ！');
-      expect(result.evalBadgeClass).toContain('eval-can-improve');
-      expect(result.evalBadgeText).toContain('もっと短くできるよ！');
-    });
-
-    it('おもちゃあつめモードの場合、専用のタイトル・文言になること', () => {
-      const result = evaluateClear({
-        mode: 'toy',
-        usedBlocks: 10,
-        minBlocks: 11
-      });
-
-      expect(result.isPerfect).toBe(true);
-      expect(result.victoryTitle).toContain('ぬいぐるみを ぜんぶ とどけたよ');
-    });
-
-    it('おおきさくらべモードの場合、専用のタイトル・文言になること', () => {
-      const result = evaluateClear({
-        mode: 'sort',
-        usedBlocks: 5,
-        minBlocks: 5
-      });
-
-      expect(result.isPerfect).toBe(true);
-      expect(result.victoryTitle).toContain('きれいに ならんだよ');
+    it.each(cases)('$name', ({ input, expected }) => {
+      const result = evaluateClear(input);
+      expect(result.isPerfect).toBe(expected.isPerfect);
+      if (expected.titleIncludes) expect(result.victoryTitle).toContain(expected.titleIncludes);
+      if (expected.badgeClassIncludes) expect(result.evalBadgeClass).toContain(expected.badgeClassIncludes);
+      if (expected.bubbleIncludes) expect(result.bubbleMessage).toContain(expected.bubbleIncludes);
+      if (expected.badgeTextIncludes) expect(result.evalBadgeText).toContain(expected.badgeTextIncludes);
     });
   });
 });

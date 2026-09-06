@@ -78,28 +78,17 @@ export function openBoxAt(toys = [], x, y) {
   return { newToys, openedBox };
 }
 
-/**
- * ランダムボックスの中身を入れ替える (純粋関数)
- * @param {Array<Object>} toys
- * @param {boolean} shouldSwap
- * @returns {Array<Object>}
- */
+function swapBoxPair(boxes) {
+  const [first, second] = boxes;
+  return [
+    { ...first, icon: second.icon, name: second.name, isTrap: second.isTrap },
+    { ...second, icon: first.icon, name: first.name, isTrap: first.isTrap }
+  ];
+}
+
 export function shuffleBoxes(toys = [], shouldSwap = false) {
-  if (toys.length < 2) return toys.map(t => ({ ...t, isOpened: t.isBox ? false : t.isOpened }));
-
-  const cloned = toys.map(t => ({ ...t, isOpened: t.isBox ? false : t.isOpened }));
-  if (shouldSwap && cloned[0] && cloned[1]) {
-    const tempIcon = cloned[0].icon;
-    const tempName = cloned[0].name;
-    const tempIsTrap = cloned[0].isTrap;
-
-    cloned[0].icon = cloned[1].icon;
-    cloned[0].name = cloned[1].name;
-    cloned[0].isTrap = cloned[1].isTrap;
-
-    cloned[1].icon = tempIcon;
-    cloned[1].name = tempName;
-    cloned[1].isTrap = tempIsTrap;
-  }
-  return cloned;
+  const resetToys = toys.map(t => ({ ...t, isOpened: t.isBox ? false : t.isOpened }));
+  if (!shouldSwap || resetToys.length < 2) return resetToys;
+  const [swappedA, swappedB] = swapBoxPair(resetToys);
+  return [swappedA, swappedB, ...resetToys.slice(2)];
 }

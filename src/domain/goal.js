@@ -10,39 +10,22 @@
  * @returns {{ homuraX: number, homuraDir: number }}
  */
 export function stepHomura(homuraX, homuraDir, gridSize) {
-  let nextX = homuraX + homuraDir;
-  let nextDir = homuraDir;
-
+  const nextX = homuraX + homuraDir;
   if (nextX <= 0) {
-    nextX = 0;
-    nextDir = 1;
-  } else if (nextX >= gridSize - 1) {
-    nextX = gridSize - 1;
-    nextDir = -1;
+    return { homuraX: 0, homuraDir: 1 };
   }
-
-  return { homuraX: nextX, homuraDir: nextDir };
+  if (nextX >= gridSize - 1) {
+    return { homuraX: gridSize - 1, homuraDir: -1 };
+  }
+  return { homuraX: nextX, homuraDir };
 }
 
-/**
- * ゴール到達判定およびクリア条件の検証 (純粋関数)
- * @param {Object} params
- * @param {'chase' | 'toy' | 'sort'} params.mode
- * @param {number} params.x
- * @param {number} params.y
- * @param {number} params.goalX
- * @param {number} params.goalY
- * @param {number} params.homuraX
- * @param {number} params.homuraY
- * @param {number} params.collectedToysCount
- * @param {number} params.targetToysCount
- * @param {boolean} params.hasTrap
- * @returns {{
- *   isAtGoal: boolean,
- *   isSuccess: boolean,
- *   reason?: 'success' | 'trap' | 'missing_toys'
- * }}
- */
+function evaluateToyGoalStatus(hasTrap, collectedCount, targetCount) {
+  if (hasTrap) return { isAtGoal: true, isSuccess: false, reason: 'trap' };
+  if (collectedCount < targetCount) return { isAtGoal: true, isSuccess: false, reason: 'missing_toys' };
+  return { isAtGoal: true, isSuccess: true, reason: 'success' };
+}
+
 export function checkGoalReached({
   mode,
   x,
@@ -56,22 +39,14 @@ export function checkGoalReached({
   hasTrap = false
 }) {
   const isToyMode = mode === 'toy';
-  const isAtGoal = isToyMode
-    ? (x === goalX && y === goalY)
-    : (x === homuraX && y === homuraY);
+  const targetX = isToyMode ? goalX : homuraX;
+  const targetY = isToyMode ? goalY : homuraY;
 
-  if (!isAtGoal) {
+  if (x !== targetX || y !== targetY) {
     return { isAtGoal: false, isSuccess: false };
   }
-
   if (isToyMode) {
-    if (hasTrap) {
-      return { isAtGoal: true, isSuccess: false, reason: 'trap' };
-    }
-    if (collectedToysCount < targetToysCount) {
-      return { isAtGoal: true, isSuccess: false, reason: 'missing_toys' };
-    }
+    return evaluateToyGoalStatus(hasTrap, collectedToysCount, targetToysCount);
   }
-
   return { isAtGoal: true, isSuccess: true, reason: 'success' };
 }

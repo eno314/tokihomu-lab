@@ -13,121 +13,141 @@ export function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-/**
- * ソートモード専用の実行エンジン
- * @param {Array<Object>} commands
- * @param {Object} [workspace]
- */
+function triggerSwapAnimation(laneId, p) {
+  const slotA = document.getElementById(`cat-slot-${laneId}-${p}`);
+  const slotB = document.getElementById(`cat-slot-${laneId}-${p + 1}`);
+  if (!slotA || !slotB) return;
+  const itemA = slotA.querySelector('.sort-cat-item');
+  const itemB = slotB.querySelector('.sort-cat-item');
+  if (itemA) itemA.classList.add('cat-swapping');
+  if (itemB) itemB.classList.add('cat-swapping');
+}
+
+function processLaneSwap(lane, activeLaneIds, pointer, condition, swappedLanes) {
+  if (!activeLaneIds.includes(lane.id)) return lane;
+  const { newLane, swapped } = swapCatsInLane(lane, pointer, condition);
+  if (swapped) {
+    swappedLanes.push(lane.name);
+    triggerSwapAnimation(lane.id, pointer);
+  }
+  return newLane;
+}
+
+async function executeSortSwap(cmd, ctx) {
+  const state = store.getState();
+  const activeLaneIds = ctx.activeLaneIds || state.sortLanes.map(l => l.id);
+  const condition = cmd.type === 'SORT_SWAP' ? 'always' : 'if_greater';
+  const swappedLanes = [];
+
+  const nextLanes = state.sortLanes.map(lane =>
+    processLaneSwap(lane, activeLaneIds, state.sortPointer, condition, swappedLanes)
+  );
+
+  if (swappedLanes.length > 0) {
+    store.setState({ sortLanes: nextLanes });
+    setMessage(`「${swappedLanes.join(' と ')}で ねこを いれかえたよ！🔄」`, 'toki');
+    await sleep(ctx.delay);
+    renderSortStage();
+    return;
+  }
+  await sleep(Math.min(250, ctx.delay));
+}
+
+async function executeSortIf(cmd, ctx) {
+  const state = store.getState();
+  const lanes = ctx.activeLaneIds
+    ? state.sortLanes.filter(l => ctx.activeLaneIds.includes(l.id))
+    : state.sortLanes;
+  const matching = filterLanesByCondition(lanes, state.sortPointer);
+
+  if (matching.length === 0) {
+    setMessage('「ひだりのほうが ちいさい（または おなじ）から そのままでOKニャ！」', 'toki');
+    await sleep(Math.min(300, ctx.delay));
+    return;
+  }
+
+  const names = matching.map(l => l.name).join(' と ');
+  setMessage(`「ひだりのほうが おおきいニャ！（${names}） なかのブロックを じっこうするよ！」`, 'toki');
+  await sleep(Math.min(300, ctx.delay));
+  await ctx.executeCommands(cmd.branch, matching.map(l => l.id));
+}
+
+async function executeSortStepNext(cmd, ctx) {
+  const state = store.getState();
+  const maxPointer = (state.sortLanes[0] ? state.sortLanes[0].cats.length : 3) - 2;
+  const { nextPointer, isOutOfBounds } = stepSortPointer(state.sortPointer, maxPointer);
+
+  if (isOutOfBounds) {
+    setPlayerMood('sad');
+    setMessage('「ここが はしっこニャ！ これいじょう みぎには すすめないよ」 「リセット」をおして やりなおしてね！', 'sad');
+    store.setState({ shouldStop: true });
+    return { stop: true };
+  }
+
+  store.setState({ sortPointer: nextPointer });
+  updateSupervisorPositions();
+  setMessage('つぎの ペアへ すすんだよ！🐾', 'toki');
+  await sleep(ctx.delay);
+  return {};
+}
+
+async function executeSortResetPointer(cmd, ctx) {
+  store.setState({ sortPointer: 0 });
+  updateSupervisorPositions();
+  setMessage('さいしょの ペア（1ばんめと 2ばんめ）に もどったよ！⏪', 'toki');
+  await sleep(ctx.delay);
+  return {};
+}
+
+const SORT_COMMAND_EXECUTORS = {
+  SORT_IF: executeSortIf,
+  SORT_SWAP: executeSortSwap,
+  SORT_COMPARE_SWAP: executeSortSwap,
+  SORT_STEP_NEXT: executeSortStepNext,
+  SORT_RESET_POINTER: executeSortResetPointer
+};
+
+function finishSortProgram(workspace) {
+  if (workspace) workspace.highlightBlock(null);
+  const state = store.getState();
+  if (areAllLanesSorted(state.sortLanes)) {
+    onGoalReached(workspace);
+    return;
+  }
+  if (!state.shouldStop) {
+    setPlayerMood('sad');
+    setMessage('プログラムが おわったよ！ でも まだ ちいさいじゅんに ならんでいないニャ〜。「リセット」してお手本やくりかえしをためしてみてね！', 'sad');
+  }
+}
+
 export async function runSortProgram(commands, workspace) {
   const getStepDelay = () => parseInt(elements.speedSelect ? elements.speedSelect.value : 450, 10) || 450;
   setMessage('大きさ比べ スタートニャ！🐾', 'toki');
 
   async function executeSortCommands(cmdList, activeLaneIds = null) {
-    for (let i = 0; i < cmdList.length; i++) {
+    for (const cmd of cmdList) {
       if (store.getState().shouldStop) break;
+      if (workspace && cmd.blockId) workspace.highlightBlock(cmd.blockId);
 
-      const cmd = cmdList[i];
-      if (workspace && cmd.blockId) {
-        workspace.highlightBlock(cmd.blockId);
-      }
+      const executor = SORT_COMMAND_EXECUTORS[cmd.type];
+      if (!executor) continue;
 
-      if (cmd.type === 'SORT_IF') {
-        const state = store.getState();
-        const currentActiveLanes = activeLaneIds
-          ? state.sortLanes.filter(l => activeLaneIds.includes(l.id))
-          : state.sortLanes;
-        const matchingLanes = filterLanesByCondition(currentActiveLanes, state.sortPointer);
+      const ctx = {
+        activeLaneIds,
+        get delay() { return getStepDelay(); },
+        executeCommands: executeSortCommands
+      };
 
-        if (matchingLanes.length > 0) {
-          const names = matchingLanes.map(l => l.name).join(' と ');
-          setMessage(`「ひだりのほうが おおきいニャ！（${names}） なかのブロックを じっこうするよ！」`, 'toki');
-          await sleep(Math.min(300, getStepDelay()));
-          await executeSortCommands(cmd.branch, matchingLanes.map(l => l.id));
-        } else {
-          setMessage('「ひだりのほうが ちいさい（または おなじ）から そのままでOKニャ！」', 'toki');
-          await sleep(Math.min(300, getStepDelay()));
-        }
-        await sleep(Math.floor(getStepDelay() / 2));
-      } else if (cmd.type === 'SORT_SWAP' || cmd.type === 'SORT_COMPARE_SWAP') {
-        let anySwapped = false;
-        const swapLaneNames = [];
-        const state = store.getState();
-        const currentActiveLaneIds = activeLaneIds || state.sortLanes.map(l => l.id);
-        const p = state.sortPointer;
-
-        const nextLanes = state.sortLanes.map(lane => {
-          if (!currentActiveLaneIds.includes(lane.id)) return lane;
-
-          const condition = cmd.type === 'SORT_SWAP' ? 'always' : 'if_greater';
-          const { newLane, swapped } = swapCatsInLane(lane, p, condition);
-          if (swapped) {
-            anySwapped = true;
-            swapLaneNames.push(lane.name);
-
-            const slotA = document.getElementById(`cat-slot-${lane.id}-${p}`);
-            const slotB = document.getElementById(`cat-slot-${lane.id}-${p + 1}`);
-            if (slotA && slotB) {
-              const itemA = slotA.querySelector('.sort-cat-item');
-              const itemB = slotB.querySelector('.sort-cat-item');
-              if (itemA) itemA.classList.add('cat-swapping');
-              if (itemB) itemB.classList.add('cat-swapping');
-            }
-          }
-          return newLane;
-        });
-
-        if (anySwapped) {
-          store.setState({ sortLanes: nextLanes });
-          setMessage(`「${swapLaneNames.join(' と ')}で ねこを いれかえたよ！🔄」`, 'toki');
-          await sleep(getStepDelay());
-          renderSortStage();
-        } else {
-          await sleep(Math.min(250, getStepDelay()));
-        }
-        await sleep(Math.floor(getStepDelay() / 2));
-      } else if (cmd.type === 'SORT_STEP_NEXT') {
-        const state = store.getState();
-        const maxPointer = (state.sortLanes[0] ? state.sortLanes[0].cats.length : 3) - 2;
-        const { nextPointer, isOutOfBounds } = stepSortPointer(state.sortPointer, maxPointer);
-
-        if (!isOutOfBounds) {
-          store.setState({ sortPointer: nextPointer });
-          updateSupervisorPositions();
-          setMessage('つぎの ペアへ すすんだよ！🐾', 'toki');
-          await sleep(getStepDelay());
-        } else {
-          setPlayerMood('sad');
-          setMessage('「ここが はしっこニャ！ これいじょう みぎには すすめないよ」 「リセット」をおして やりなおしてね！', 'sad');
-          store.setState({ shouldStop: true });
-          break;
-        }
-      } else if (cmd.type === 'SORT_RESET_POINTER') {
-        store.setState({ sortPointer: 0 });
-        updateSupervisorPositions();
-        setMessage('さいしょの ペア（1ばんめと 2ばんめ）に もどったよ！⏪', 'toki');
-        await sleep(getStepDelay());
-      }
-
+      const result = await executor(cmd, ctx);
+      if (result && result.stop) break;
       await sleep(Math.floor(getStepDelay() / 2));
     }
   }
 
   await executeSortCommands(commands);
+  finishSortProgram(workspace);
 
-  if (workspace) {
-    workspace.highlightBlock(null);
-  }
-
-  const state = store.getState();
-  const allSorted = areAllLanesSorted(state.sortLanes);
-  if (allSorted) {
-    onGoalReached(workspace);
-  } else if (!state.shouldStop) {
-    setPlayerMood('sad');
-    setMessage('プログラムが おわったよ！ でも まだ ちいさいじゅんに ならんでいないニャ〜。「リセット」してお手本やくりかえしをためしてみてね！', 'sad');
-  }
-
-  if (!store.getState().shouldStop && elements.runBtn) {
+  if (!store.getState().shouldStop && store.getState().isRunning && elements.runBtn) {
     elements.runBtn.disabled = true;
   }
   store.setState({ isRunning: false });

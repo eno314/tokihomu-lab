@@ -8,42 +8,56 @@ describe('toys domain logic', () => {
   ];
 
   describe('findUncollectedToy', () => {
-    it('未回収のおもちゃが存在するマスならオブジェクトを返すこと', () => {
-      const toy = findUncollectedToy(sampleToys, [], [], 2, 2);
-      expect(toy).toEqual(sampleToys[0]);
-    });
+    const cases = [
+      { name: '未回収マス (2,2)', collected: [], traps: [], x: 2, y: 2, expected: sampleToys[0] },
+      { name: '回収済みマス (2,2)', collected: ['toy-1'], traps: [], x: 2, y: 2, expected: null },
+      { name: 'おもちゃなしマス (0,0)', collected: [], traps: [], x: 0, y: 0, expected: null }
+    ];
 
-    it('すでに回収済みのおもちゃのマスならnullを返すこと', () => {
-      const toy = findUncollectedToy(sampleToys, ['toy-1'], [], 2, 2);
-      expect(toy).toBeNull();
-    });
-
-    it('おもちゃが存在しないマスならnullを返すこと', () => {
-      const toy = findUncollectedToy(sampleToys, [], [], 0, 0);
-      expect(toy).toBeNull();
+    it.each(cases)('$name', ({ collected, traps, x, y, expected }) => {
+      expect(findUncollectedToy(sampleToys, collected, traps, x, y)).toEqual(expected);
     });
   });
 
   describe('pickupToy', () => {
-    it('通常のおもちゃを拾った場合、collectedToysに追加されること', () => {
-      const result = pickupToy(sampleToys, [], [], 2, 2);
-      expect(result.collectedToys).toEqual(['toy-1']);
-      expect(result.collectedTraps).toEqual([]);
-      expect(result.pickedToy).toEqual(sampleToys[0]);
-    });
+    const cases = [
+      {
+        name: '通常のおもちゃを拾う',
+        collected: [],
+        traps: [],
+        x: 2,
+        y: 2,
+        expectedCollected: ['toy-1'],
+        expectedTraps: [],
+        expectedPickedId: 'toy-1'
+      },
+      {
+        name: '罠（紙）を拾う',
+        collected: [],
+        traps: [],
+        x: 1,
+        y: 2,
+        expectedCollected: [],
+        expectedTraps: ['box-1'],
+        expectedPickedId: 'box-1'
+      },
+      {
+        name: '空振り（おもちゃなし）',
+        collected: ['toy-1'],
+        traps: [],
+        x: 0,
+        y: 0,
+        expectedCollected: ['toy-1'],
+        expectedTraps: [],
+        expectedPickedId: null
+      }
+    ];
 
-    it('罠（トイレットペーパー）を拾った場合、collectedTrapsに追加されること', () => {
-      const result = pickupToy(sampleToys, [], [], 1, 2);
-      expect(result.collectedToys).toEqual([]);
-      expect(result.collectedTraps).toEqual(['box-1']);
-      expect(result.pickedToy.isTrap).toBe(true);
-    });
-
-    it('空振り（おもちゃがないマス）の場合はリストが変更されずpickedToyがnullとなること', () => {
-      const result = pickupToy(sampleToys, ['toy-1'], [], 0, 0);
-      expect(result.collectedToys).toEqual(['toy-1']);
-      expect(result.collectedTraps).toEqual([]);
-      expect(result.pickedToy).toBeNull();
+    it.each(cases)('$name', ({ collected, traps, x, y, expectedCollected, expectedTraps, expectedPickedId }) => {
+      const result = pickupToy(sampleToys, collected, traps, x, y);
+      expect(result.collectedToys).toEqual(expectedCollected);
+      expect(result.collectedTraps).toEqual(expectedTraps);
+      expect(result.pickedToy ? result.pickedToy.id : null).toBe(expectedPickedId);
     });
   });
 
@@ -54,7 +68,6 @@ describe('toys domain logic', () => {
       expect(openedBox.id).toBe('box-1');
       expect(openedBox.isOpened).toBe(true);
       expect(newToys.find(t => t.id === 'box-1').isOpened).toBe(true);
-      // 元の配列がミューテーションされていないこと (FP特性)
       expect(sampleToys.find(t => t.id === 'box-1').isOpened).toBe(false);
     });
 
@@ -75,7 +88,6 @@ describe('toys domain logic', () => {
       expect(swapped[0].isTrap).toBe(true);
       expect(swapped[1].icon).toBe('🦐');
       expect(swapped[1].isTrap).toBe(false);
-      // 箱はすべて未開封(isOpened: false)にリセットされること
       expect(swapped[0].isOpened).toBe(false);
       expect(swapped[1].isOpened).toBe(false);
     });

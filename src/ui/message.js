@@ -13,63 +13,57 @@ import {
   HOMURA_HAPPY_SVG
 } from '../constants/assets.js';
 
-/**
- * プレイヤー（トキ／ホムラ）の表情を切り替える
- * @param {'normal' | 'happy' | 'sad'} mood
- */
+const MOOD_AVATARS = {
+  toy: {
+    sad: HOMURA_SAD_SVG,
+    happy: HOMURA_HAPPY_SVG,
+    normal: HOMURA_SVG
+  },
+  chase: {
+    sad: TOKI_SAD_SVG,
+    happy: TOKI_HAPPY_SVG,
+    normal: TOKI_SVG
+  }
+};
+
 export function setPlayerMood(mood = 'normal') {
   if (!elements.tokiInner) return;
-  const state = store.getState();
-  const isToyMode = state.currentMode === 'toy';
-
-  if (isToyMode) {
-    if (mood === 'sad') {
-      elements.tokiInner.innerHTML = HOMURA_SAD_SVG;
-    } else if (mood === 'happy') {
-      elements.tokiInner.innerHTML = HOMURA_HAPPY_SVG;
-    } else {
-      elements.tokiInner.innerHTML = HOMURA_SVG;
-    }
-  } else {
-    if (mood === 'sad') {
-      elements.tokiInner.innerHTML = TOKI_SAD_SVG;
-    } else if (mood === 'happy') {
-      elements.tokiInner.innerHTML = TOKI_HAPPY_SVG;
-    } else {
-      elements.tokiInner.innerHTML = TOKI_SVG;
-    }
-  }
+  const modeKey = store.getState().currentMode === 'toy' ? 'toy' : 'chase';
+  const avatar = MOOD_AVATARS[modeKey][mood] || MOOD_AVATARS[modeKey].normal;
+  elements.tokiInner.innerHTML = avatar;
 }
 
 export const setTokiMood = setPlayerMood;
 
-/**
- * 吹き出しメッセージと話者アバターを更新
- * @param {string} text
- * @param {string} speaker
- */
+function resolveSpeakerAvatar(speaker, isToyMode) {
+  const charKey = isToyMode ? 'toy' : 'chase';
+  const directAvatars = {
+    toki: TOKI_SVG,
+    homura: HOMURA_SVG,
+    sad: MOOD_AVATARS[charKey].sad,
+    '😿': MOOD_AVATARS[charKey].sad,
+    happy: MOOD_AVATARS[charKey].happy,
+    '😸': MOOD_AVATARS[charKey].happy,
+    player: MOOD_AVATARS[charKey].normal,
+    auto: MOOD_AVATARS[charKey].normal,
+    normal: MOOD_AVATARS[charKey].normal,
+    '🐱': MOOD_AVATARS[charKey].normal,
+    goal: isToyMode ? TOKI_SVG : HOMURA_SVG
+  };
+  return directAvatars[speaker] || null;
+}
+
 export function setMessage(text, speaker = 'auto') {
   if (elements.statusMessage) {
     elements.statusMessage.textContent = text;
   }
   if (!elements.speakerAvatar) return;
 
-  const state = store.getState();
-  const isToyMode = state.currentMode === 'toy';
-
-  if (speaker === 'toki') {
-    elements.speakerAvatar.innerHTML = TOKI_SVG;
-  } else if (speaker === 'homura') {
-    elements.speakerAvatar.innerHTML = HOMURA_SVG;
-  } else if (speaker === 'sad' || speaker === '😿') {
-    elements.speakerAvatar.innerHTML = isToyMode ? HOMURA_SAD_SVG : TOKI_SAD_SVG;
-  } else if (speaker === 'happy' || speaker === '😸') {
-    elements.speakerAvatar.innerHTML = isToyMode ? HOMURA_HAPPY_SVG : TOKI_HAPPY_SVG;
-  } else if (speaker === 'player' || speaker === 'auto' || speaker === 'normal' || speaker === '🐱') {
-    elements.speakerAvatar.innerHTML = isToyMode ? HOMURA_SVG : TOKI_SVG;
-  } else if (speaker === 'goal') {
-    elements.speakerAvatar.innerHTML = isToyMode ? TOKI_SVG : HOMURA_SVG;
-  } else {
-    elements.speakerAvatar.textContent = speaker;
+  const isToyMode = store.getState().currentMode === 'toy';
+  const avatarSvg = resolveSpeakerAvatar(speaker, isToyMode);
+  if (avatarSvg) {
+    elements.speakerAvatar.innerHTML = avatarSvg;
+    return;
   }
+  elements.speakerAvatar.textContent = speaker;
 }

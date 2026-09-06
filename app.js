@@ -27,26 +27,10 @@ import { runProgram } from './src/execution/runner.js';
 
 let workspace = null;
 
-/**
- * Blockly の初期化
- * @param {number} [retries=30]
- */
-function initBlockly(retries = 100) {
-  const blocklyDiv = elements.blocklyDiv || document.getElementById('blocklyDiv');
-  if (typeof Blockly === 'undefined' || !blocklyDiv) {
-    if (retries > 0) {
-      setTimeout(() => initBlockly(retries - 1), 100);
-      return;
-    }
-    console.error('Blockly が読み込まれていません。CDN接続を確認してください。');
-    setMessage('Blocklyの読み込みにしっぱいしました。ネット接続をかくにんしてね。');
-    return;
-  }
-
+function injectBlocklyWorkspace(blocklyDiv) {
   registerCustomBlocks();
-
   const toolboxXml = document.getElementById('toolbox');
-  workspace = Blockly.inject(elements.blocklyDiv, {
+  workspace = Blockly.inject(blocklyDiv, {
     toolbox: toolboxXml,
     trashcan: true,
     scrollbars: true,
@@ -67,19 +51,41 @@ function initBlockly(retries = 100) {
     }
   });
 
-  // テスト互換性のため window.workspace にもエクスポート
   window.workspace = workspace;
-
   setupInitialBlocks(workspace, store.getState().currentMode);
-
   window.addEventListener('resize', () => onResize(workspace));
   setTimeout(() => onResize(workspace), 100);
 }
 
-/**
- * レベル切り替え
- * @param {number} levelId
- */
+function initBlockly(retries = 100) {
+  const blocklyDiv = elements.blocklyDiv || document.getElementById('blocklyDiv');
+  if (typeof Blockly === 'undefined' || !blocklyDiv) {
+    if (retries > 0) {
+      setTimeout(() => initBlockly(retries - 1), 100);
+      return;
+    }
+    console.error('Blockly が読み込まれていません。CDN接続を確認してください。');
+    setMessage('Blocklyの読み込みにしっぱいしました。ネット接続をかくにんしてね。');
+    return;
+  }
+  injectBlocklyWorkspace(blocklyDiv);
+}
+
+function updateActiveLevelButtons(levelId) {
+  if (!elements.levelButtons) return;
+  elements.levelButtons.forEach(btn => {
+    btn.classList.toggle('active', parseInt(btn.dataset.level, 10) === levelId);
+  });
+}
+
+function renderStageForCurrentMode() {
+  if (store.getState().currentMode === 'sort') {
+    renderSortStage();
+    return;
+  }
+  createGridBoard();
+}
+
 export function setLevel(levelId) {
   if (store.getState().isRunning) {
     store.setState({ shouldStop: true });
@@ -87,22 +93,8 @@ export function setLevel(levelId) {
 
   store.loadLevel(levelId);
   updateToolboxForCurrentState(workspace);
-
-  if (elements.levelButtons) {
-    elements.levelButtons.forEach(btn => {
-      if (parseInt(btn.dataset.level, 10) === levelId) {
-        btn.classList.add('active');
-      } else {
-        btn.classList.remove('active');
-      }
-    });
-  }
-
-  if (store.getState().currentMode === 'sort') {
-    renderSortStage();
-  } else {
-    createGridBoard();
-  }
+  updateActiveLevelButtons(levelId);
+  renderStageForCurrentMode();
   resetGame();
 
   const currentLevelData = store.getCurrentLevelData();
@@ -112,10 +104,13 @@ export function setLevel(levelId) {
   }
 }
 
-/**
- * モード切り替え (おにごっこ / ぬいぐるみあつめ / おおきさくらべ)
- * @param {'chase' | 'toy' | 'sort'} mode
- */
+function updateActiveModeTabs(mode) {
+  if (!elements.modeTabs) return;
+  elements.modeTabs.forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.mode === mode);
+  });
+}
+
 export function setMode(mode) {
   if (store.getState().currentMode === mode) return;
   if (store.getState().isRunning) {
@@ -123,28 +118,34 @@ export function setMode(mode) {
   }
 
   store.setState({ currentMode: mode });
-
-  if (elements.modeTabs) {
-    elements.modeTabs.forEach(tab => {
-      if (tab.dataset.mode === mode) {
-        tab.classList.add('active');
-      } else {
-        tab.classList.remove('active');
-      }
-    });
-  }
-
+  updateActiveModeTabs(mode);
   updateModeUI();
   renderLevelButtons();
   setupInitialBlocks(workspace, mode);
   setLevel(1);
 }
 
-/**
- * 盤面とプレイヤーのリセット
- */
+function resetBoardDisplays(isSortMode) {
+  if (isSortMode) {
+    renderSortStage();
+    return;
+  }
+  updateTokiPosition(true);
+  updateGoalDisplay();
+  updateToysDisplay();
+  updateToyCounterDisplay();
+}
+
+function getResetStartMessage(currentLevelData, currentMode) {
+  if (currentLevelData) return currentLevelData.startMessage;
+  if (currentMode === 'sort') {
+    return 'さいしょの ならびかたに もどったよ！「うごかす！」をおしてね。';
+  }
+  return 'スタートちてんに もどったよ！「うごかす！」をおしてね。';
+}
+
 export function resetGame() {
-  store.setState({ shouldStop: true });
+  store.setState({ isRunning: false, shouldStop: true });
   store.reset();
 
   setPlayerMood('normal');
@@ -153,35 +154,28 @@ export function resetGame() {
   }
   hideVictoryModal();
 
-  if (store.getState().currentMode === 'sort') {
-    renderSortStage();
-  } else {
-    updateTokiPosition(true);
-    updateGoalDisplay();
-    updateToysDisplay();
-    updateToyCounterDisplay();
-  }
-
+  const isSortMode = store.getState().currentMode === 'sort';
+  resetBoardDisplays(isSortMode);
   updateModeUI();
+  if (workspace) workspace.highlightBlock(null);
 
-  if (workspace) {
-    workspace.highlightBlock(null);
-  }
-
-  const currentLevelData = store.getCurrentLevelData();
   const isToyMode = store.getState().currentMode === 'toy';
-  const defaultMsg = store.getState().currentMode === 'sort'
-    ? 'さいしょの ならびかたに もどったよ！「うごかす！」をおしてね。'
-    : 'スタートちてんに もどったよ！「うごかす！」をおしてね。';
-  const msg = currentLevelData ? currentLevelData.startMessage : defaultMsg;
-  setMessage(msg, isToyMode ? 'homura' : 'toki');
+  const startMsg = getResetStartMessage(store.getCurrentLevelData(), store.getState().currentMode);
+  setMessage(startMsg, isToyMode ? 'homura' : 'toki');
 
   if (elements.runBtn) elements.runBtn.disabled = false;
 }
 
-/**
- * イベントリスナーの登録
- */
+function handleNextLevelClick() {
+  hideVictoryModal();
+  const nextLevel = store.getCurrentLevels().find(l => l.id === store.getState().currentLevel + 1);
+  if (nextLevel) {
+    setLevel(nextLevel.id);
+    return;
+  }
+  resetGame();
+}
+
 function setupEventListeners() {
   if (elements.runBtn) {
     elements.runBtn.addEventListener('click', () => runProgram(workspace));
@@ -196,18 +190,8 @@ function setupEventListeners() {
     });
   }
   if (elements.modalNextBtn) {
-    elements.modalNextBtn.addEventListener('click', () => {
-      hideVictoryModal();
-      const currentLevels = store.getCurrentLevels();
-      const nextLevel = currentLevels.find(l => l.id === store.getState().currentLevel + 1);
-      if (nextLevel) {
-        setLevel(nextLevel.id);
-      } else {
-        resetGame();
-      }
-    });
+    elements.modalNextBtn.addEventListener('click', handleNextLevelClick);
   }
-
   if (elements.levelButtonsContainer) {
     elements.levelButtonsContainer.addEventListener('click', (e) => {
       const btn = e.target.closest('.level-btn');
@@ -218,7 +202,6 @@ function setupEventListeners() {
       }
     });
   }
-
   if (elements.modeTabs) {
     elements.modeTabs.forEach(tab => {
       tab.addEventListener('click', () => {
@@ -231,7 +214,6 @@ function setupEventListeners() {
   }
 }
 
-// 起動時初期化
 function init() {
   initElements();
   store.loadLevel(1);
@@ -251,7 +233,6 @@ if (document.readyState === 'loading') {
   init();
 }
 
-// E2Eテスト・後方互換用グローバルプロパティ
 window.store = store;
 window.GameState = GameState;
 window.setLevel = setLevel;
