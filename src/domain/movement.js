@@ -2,7 +2,6 @@
  * tokihomu-lab 移動・衝突判定ドメインロジック (FP: 純粋関数)
  */
 
-// 向き定義: 0: 上, 1: 右, 2: 下, 3: 左
 export const DIRECTIONS = {
   UP: 0,
   RIGHT: 1,
@@ -10,55 +9,34 @@ export const DIRECTIONS = {
   LEFT: 3
 };
 
-/**
- * 現在地と向きから、1マス進んだ場合の座標を計算する (純粋関数)
- * @param {number} x
- * @param {number} y
- * @param {number} direction - 0:上, 1:右, 2:下, 3:左
- * @returns {{ x: number, y: number }}
- */
+const DIRECTION_DELTAS = {
+  [DIRECTIONS.UP]: { dx: 0, dy: -1 },
+  [DIRECTIONS.RIGHT]: { dx: 1, dy: 0 },
+  [DIRECTIONS.DOWN]: { dx: 0, dy: 1 },
+  [DIRECTIONS.LEFT]: { dx: -1, dy: 0 }
+};
+
+const TURN_OFFSETS = {
+  right: { dDir: 1, dRot: 90 },
+  left: { dDir: 3, dRot: -90 }
+};
+
 export function getNextPosition(x, y, direction) {
-  let nextX = x;
-  let nextY = y;
-
-  if (direction === DIRECTIONS.UP) nextY -= 1;
-  else if (direction === DIRECTIONS.RIGHT) nextX += 1;
-  else if (direction === DIRECTIONS.DOWN) nextY += 1;
-  else if (direction === DIRECTIONS.LEFT) nextX -= 1;
-
-  return { x: nextX, y: nextY };
+  const delta = DIRECTION_DELTAS[direction] || { dx: 0, dy: 0 };
+  return { x: x + delta.dx, y: y + delta.dy };
 }
 
-/**
- * 左右旋回時の新しい向きと累積回転角度を計算する (純粋関数)
- * @param {number} currentDirection
- * @param {number} currentTotalRotation
- * @param {'left' | 'right'} turnType
- * @returns {{ direction: number, totalRotation: number }}
- */
 export function turn(currentDirection, currentTotalRotation, turnType) {
-  if (turnType === 'right') {
-    return {
-      direction: (currentDirection + 1) % 4,
-      totalRotation: currentTotalRotation + 90
-    };
-  } else if (turnType === 'left') {
-    return {
-      direction: (currentDirection + 3) % 4,
-      totalRotation: currentTotalRotation - 90
-    };
+  const offset = TURN_OFFSETS[turnType];
+  if (!offset) {
+    return { direction: currentDirection, totalRotation: currentTotalRotation };
   }
-  return { direction: currentDirection, totalRotation: currentTotalRotation };
+  return {
+    direction: (currentDirection + offset.dDir) % 4,
+    totalRotation: currentTotalRotation + offset.dRot
+  };
 }
 
-/**
- * 指定座標が壁または障害物に衝突しているか判定する (純粋関数)
- * @param {number} x
- * @param {number} y
- * @param {number} gridSize
- * @param {Array<{x: number, y: number}>} obstacles
- * @returns {'wall' | 'obstacle' | null}
- */
 export function checkCollision(x, y, gridSize, obstacles = []) {
   if (x < 0 || x >= gridSize || y < 0 || y >= gridSize) {
     return 'wall';

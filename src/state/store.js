@@ -38,53 +38,37 @@ export function createInitialState() {
   };
 }
 
-/**
- * 現在のモードのレベル一覧を取得 (純粋関数)
- * @param {string} mode
- * @returns {Array<Object>}
- */
+const LEVELS_BY_MODE = {
+  sort: LEVELS_SORT,
+  toy: LEVELS_TOY,
+  chase: LEVELS_CHASE
+};
+
 export function getLevelsForMode(mode) {
-  if (mode === 'sort') return LEVELS_SORT;
-  if (mode === 'toy') return LEVELS_TOY;
-  return LEVELS_CHASE;
+  return LEVELS_BY_MODE[mode] || LEVELS_CHASE;
 }
 
-/**
- * 現在のレベルデータを取得 (純粋関数)
- * @param {Object} state
- * @returns {Object}
- */
 export function getCurrentLevelData(state) {
   const levels = getLevelsForMode(state.currentMode);
   return levels.find(l => l.id === state.currentLevel) || levels[0];
 }
 
-/**
- * レベル読み込み時の新しいStateを生成 (純粋関数)
- * @param {Object} prevState
- * @param {number} levelId
- * @param {string} [mode]
- * @returns {Object}
- */
-export function applyLoadLevel(prevState, levelId, mode = prevState.currentMode) {
-  const levels = getLevelsForMode(mode);
-  const level = levels.find(l => l.id === levelId) || levels[0];
+function createSortLevelState(prevState, level, mode) {
+  return {
+    ...prevState,
+    currentMode: mode,
+    currentLevel: level.id,
+    sortPointer: 0,
+    sortLanes: (level.lanes || []).map(lane => ({
+      ...lane,
+      cats: lane.cats.map(c => ({ ...c }))
+    })),
+    isRunning: false,
+    shouldStop: false
+  };
+}
 
-  if (mode === 'sort') {
-    return {
-      ...prevState,
-      currentMode: mode,
-      currentLevel: level.id,
-      sortPointer: 0,
-      sortLanes: (level.lanes || []).map(lane => ({
-        ...lane,
-        cats: lane.cats.map(c => ({ ...c }))
-      })),
-      isRunning: false,
-      shouldStop: false
-    };
-  }
-
+function createGridLevelState(prevState, level, mode) {
   return {
     ...prevState,
     currentMode: mode,
@@ -112,36 +96,39 @@ export function applyLoadLevel(prevState, levelId, mode = prevState.currentMode)
   };
 }
 
-/**
- * リセット時の新しいStateを生成 (純粋関数)
- * @param {Object} prevState
- * @returns {Object}
- */
-export function applyReset(prevState) {
-  const level = getCurrentLevelData(prevState);
-
-  if (prevState.currentMode === 'sort') {
-    return {
-      ...prevState,
-      sortPointer: 0,
-      sortLanes: (level.lanes || []).map(lane => ({
-        ...lane,
-        cats: lane.cats.map(c => ({ ...c }))
-      })),
-      isRunning: false,
-      shouldStop: false
-    };
+export function applyLoadLevel(prevState, levelId, mode = prevState.currentMode) {
+  const levels = getLevelsForMode(mode);
+  const level = levels.find(l => l.id === levelId) || levels[0];
+  if (mode === 'sort') {
+    return createSortLevelState(prevState, level, mode);
   }
+  return createGridLevelState(prevState, level, mode);
+}
 
+function resolveResetToys(level) {
   const shouldSwap = typeof window !== 'undefined' && window.__forceBoxSwap !== undefined
     ? !!window.__forceBoxSwap
     : Math.random() < 0.5;
 
-  let resetToys = (level.toys || []).map(t => ({ ...t }));
-  if (level.hasRandomBoxes) {
-    resetToys = shuffleBoxesPure(resetToys, shouldSwap);
-  }
+  const baseToys = (level.toys || []).map(t => ({ ...t }));
+  if (!level.hasRandomBoxes) return baseToys;
+  return shuffleBoxesPure(baseToys, shouldSwap);
+}
 
+function resetSortState(prevState, level) {
+  return {
+    ...prevState,
+    sortPointer: 0,
+    sortLanes: (level.lanes || []).map(lane => ({
+      ...lane,
+      cats: lane.cats.map(c => ({ ...c }))
+    })),
+    isRunning: false,
+    shouldStop: false
+  };
+}
+
+function resetGridState(prevState, level) {
   return {
     ...prevState,
     x: level.startX,
@@ -151,12 +138,20 @@ export function applyReset(prevState) {
     homuraX: level.goalX,
     homuraY: level.goalY,
     homuraDir: level.homuraInitialDir || -1,
-    toys: resetToys,
+    toys: resolveResetToys(level),
     collectedToys: [],
     collectedTraps: [],
     isRunning: false,
     shouldStop: false
   };
+}
+
+export function applyReset(prevState) {
+  const level = getCurrentLevelData(prevState);
+  if (prevState.currentMode === 'sort') {
+    return resetSortState(prevState, level);
+  }
+  return resetGridState(prevState, level);
 }
 
 /**
