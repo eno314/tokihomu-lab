@@ -35,9 +35,9 @@ test.describe('おもちゃあつめモード UIテスト', () => {
     await expect(page.locator('#legend-start')).toHaveText('🚩 スタート: ホムラ (🐈)');
     await expect(page.locator('#legend-goal')).toHaveText('🎯 ゴール: トキ (🐾)');
 
-    // レベルボタンがおもちゃモード用（レベル1, 2, 3）になる
+    // レベルボタンがおもちゃモード用（レベル1, 2, 3, 4）になる
     const levelBtns = page.locator('.level-btn');
-    await expect(levelBtns).toHaveCount(3);
+    await expect(levelBtns).toHaveCount(4);
 
     // レベル2に切り替え
     const level2Btn = page.locator('.level-btn[data-level="2"]');
@@ -314,5 +314,79 @@ test.describe('おもちゃあつめモード UIテスト', () => {
 
     // クリアモーダルは表示されない
     await expect(page.locator('#victory-modal')).toHaveClass(/hidden/);
+  });
+
+  test('おもちゃあつめモード レベル4: 盤面配置（直線通路・3つの箱・障害物）が正しく初期化されること', async ({ page }) => {
+    await page.locator('.mode-tab[data-mode="toy"]').click();
+    const level4Btn = page.locator('.level-btn[data-level="4"]');
+    await expect(level4Btn).toBeVisible();
+    await expect(level4Btn).toContainText('👑 レベル 4');
+    await level4Btn.click();
+    await expect(level4Btn).toHaveClass(/active/);
+
+    // おもちゃカウンターは 0 / 2
+    await expect(page.locator('#toy-counter-text')).toHaveText('0 / 2');
+
+    // 盤面に3つの箱が表示されていること
+    const boxCells = page.locator('.toy-cell');
+    await expect(boxCells).toHaveCount(3);
+
+    // 障害物セルが10個あること（上下の行）
+    const obstacleCells = page.locator('.obstacle-cell');
+    await expect(obstacleCells).toHaveCount(10);
+  });
+
+  test('おもちゃあつめモード レベル4: ループ×もし（7ブロック）のスマート解でクリアでき、かんぺき評価になること', async ({ page }) => {
+    await page.locator('.mode-tab[data-mode="toy"]').click();
+    await page.selectOption('#speed-select', '250');
+    await page.locator('.level-btn[data-level="4"]').click();
+
+    // 7ブロックのスマート解:
+    // 3かい くりかえす
+    //   まえにすすむ
+    //   もし [🦐] なら ひろう
+    //   もし [🎾] なら ひろう
+    // まえにすすむ
+    await page.evaluate(() => {
+      workspace.clear();
+      const repeatBlock = workspace.newBlock('toki_repeat');
+      repeatBlock.setFieldValue('3', 'TIMES');
+
+      const m1 = workspace.newBlock('toki_move');
+
+      const ifShrimp = workspace.newBlock('toki_if');
+      ifShrimp.setFieldValue('🦐', 'ITEM');
+      const pick1 = workspace.newBlock('toki_pickup');
+      ifShrimp.getInput('DO').connection.connect(pick1.previousConnection);
+
+      const ifBall = workspace.newBlock('toki_if');
+      ifBall.setFieldValue('🎾', 'ITEM');
+      const pick2 = workspace.newBlock('toki_pickup');
+      ifBall.getInput('DO').connection.connect(pick2.previousConnection);
+
+      m1.nextConnection.connect(ifShrimp.previousConnection);
+      ifShrimp.nextConnection.connect(ifBall.previousConnection);
+
+      repeatBlock.getInput('DO').connection.connect(m1.previousConnection);
+
+      const mGoal = workspace.newBlock('toki_move');
+      repeatBlock.nextConnection.connect(mGoal.previousConnection);
+
+      [repeatBlock, m1, ifShrimp, pick1, ifBall, pick2, mGoal].forEach(b => {
+        b.initSvg();
+        b.render();
+      });
+    });
+
+    await page.locator('#run-btn').click();
+
+    // エビとボールが両方回収されてカウンターが「2 / 2」になること
+    await expect(page.locator('#toy-counter-text')).toHaveText('2 / 2', { timeout: 15000 });
+
+    // ゴール達成モーダルが表示され、かんぺき評価（eval-perfect）であること
+    const victoryModal = page.locator('#victory-modal');
+    await expect(victoryModal).not.toHaveClass(/hidden/, { timeout: 15000 });
+    await expect(page.locator('.eval-perfect')).toBeVisible();
+    await expect(page.locator('#victory-title')).toContainText('かんぺき');
   });
 });
