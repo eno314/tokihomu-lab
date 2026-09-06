@@ -3,44 +3,37 @@ import { getNextPosition, turn, checkCollision, DIRECTIONS } from '../../src/dom
 
 describe('movement domain logic', () => {
   describe('getNextPosition', () => {
-    it('上向き(0)のときyが-1されること', () => {
-      expect(getNextPosition(2, 2, DIRECTIONS.UP)).toEqual({ x: 2, y: 1 });
-    });
+    const cases = [
+      { name: '上向き (0) で y が -1', dir: DIRECTIONS.UP, expected: { x: 2, y: 1 } },
+      { name: '右向き (1) で x が +1', dir: DIRECTIONS.RIGHT, expected: { x: 3, y: 2 } },
+      { name: '下向き (2) で y が +1', dir: DIRECTIONS.DOWN, expected: { x: 2, y: 3 } },
+      { name: '左向き (3) で x が -1', dir: DIRECTIONS.LEFT, expected: { x: 1, y: 2 } }
+    ];
 
-    it('右向き(1)のときxが+1されること', () => {
-      expect(getNextPosition(2, 2, DIRECTIONS.RIGHT)).toEqual({ x: 3, y: 2 });
-    });
-
-    it('下向き(2)のときyが+1されること', () => {
-      expect(getNextPosition(2, 2, DIRECTIONS.DOWN)).toEqual({ x: 2, y: 3 });
-    });
-
-    it('左向き(3)のときxが-1されること', () => {
-      expect(getNextPosition(2, 2, DIRECTIONS.LEFT)).toEqual({ x: 1, y: 2 });
+    it.each(cases)('$name', ({ dir, expected }) => {
+      expect(getNextPosition(2, 2, dir)).toEqual(expected);
     });
   });
 
   describe('turn', () => {
-    it('右回転時、向きが時計回りに進み角度が+90度されること', () => {
-      const step1 = turn(DIRECTIONS.UP, 0, 'right');
-      expect(step1).toEqual({ direction: DIRECTIONS.RIGHT, totalRotation: 90 });
+    const rightTurnCases = [
+      { from: DIRECTIONS.UP, rot: 0, expectedDir: DIRECTIONS.RIGHT, expectedRot: 90 },
+      { from: DIRECTIONS.RIGHT, rot: 90, expectedDir: DIRECTIONS.DOWN, expectedRot: 180 },
+      { from: DIRECTIONS.DOWN, rot: 180, expectedDir: DIRECTIONS.LEFT, expectedRot: 270 },
+      { from: DIRECTIONS.LEFT, rot: 270, expectedDir: DIRECTIONS.UP, expectedRot: 360 }
+    ];
 
-      const step2 = turn(step1.direction, step1.totalRotation, 'right');
-      expect(step2).toEqual({ direction: DIRECTIONS.DOWN, totalRotation: 180 });
-
-      const step3 = turn(step2.direction, step2.totalRotation, 'right');
-      expect(step3).toEqual({ direction: DIRECTIONS.LEFT, totalRotation: 270 });
-
-      const step4 = turn(step3.direction, step3.totalRotation, 'right');
-      expect(step4).toEqual({ direction: DIRECTIONS.UP, totalRotation: 360 });
+    it.each(rightTurnCases)('右回転: $from から $expectedDir (角度: $expectedRot)', ({ from, rot, expectedDir, expectedRot }) => {
+      expect(turn(from, rot, 'right')).toEqual({ direction: expectedDir, totalRotation: expectedRot });
     });
 
-    it('左回転時、向きが反時計回りに戻り角度が-90度されること', () => {
-      const step1 = turn(DIRECTIONS.UP, 0, 'left');
-      expect(step1).toEqual({ direction: DIRECTIONS.LEFT, totalRotation: -90 });
+    const leftTurnCases = [
+      { from: DIRECTIONS.UP, rot: 0, expectedDir: DIRECTIONS.LEFT, expectedRot: -90 },
+      { from: DIRECTIONS.LEFT, rot: -90, expectedDir: DIRECTIONS.DOWN, expectedRot: -180 }
+    ];
 
-      const step2 = turn(step1.direction, step1.totalRotation, 'left');
-      expect(step2).toEqual({ direction: DIRECTIONS.DOWN, totalRotation: -180 });
+    it.each(leftTurnCases)('左回転: $from から $expectedDir (角度: $expectedRot)', ({ from, rot, expectedDir, expectedRot }) => {
+      expect(turn(from, rot, 'left')).toEqual({ direction: expectedDir, totalRotation: expectedRot });
     });
   });
 
@@ -51,22 +44,20 @@ describe('movement domain logic', () => {
       { x: 2, y: 3 }
     ];
 
-    it('盤面内かつ障害物なしの場合はnullを返すこと', () => {
-      expect(checkCollision(0, 0, gridSize, obstacles)).toBeNull();
-      expect(checkCollision(4, 4, gridSize, obstacles)).toBeNull();
-      expect(checkCollision(2, 2, gridSize, obstacles)).toBeNull();
-    });
+    const collisionCases = [
+      { name: '盤面内 (0,0)', x: 0, y: 0, expected: null },
+      { name: '盤面内 (4,4)', x: 4, y: 4, expected: null },
+      { name: '盤面内 (2,2)', x: 2, y: 2, expected: null },
+      { name: '左壁の外 (-1,2)', x: -1, y: 2, expected: 'wall' },
+      { name: '右壁の外 (5,2)', x: 5, y: 2, expected: 'wall' },
+      { name: '上壁の外 (2,-1)', x: 2, y: -1, expected: 'wall' },
+      { name: '下壁の外 (2,5)', x: 2, y: 5, expected: 'wall' },
+      { name: '障害物 (1,1)', x: 1, y: 1, expected: 'obstacle' },
+      { name: '障害物 (2,3)', x: 2, y: 3, expected: 'obstacle' }
+    ];
 
-    it('盤面外の境界値ではwallを返すこと', () => {
-      expect(checkCollision(-1, 2, gridSize, obstacles)).toBe('wall');
-      expect(checkCollision(5, 2, gridSize, obstacles)).toBe('wall');
-      expect(checkCollision(2, -1, gridSize, obstacles)).toBe('wall');
-      expect(checkCollision(2, 5, gridSize, obstacles)).toBe('wall');
-    });
-
-    it('障害物があるマスではobstacleを返すこと', () => {
-      expect(checkCollision(1, 1, gridSize, obstacles)).toBe('obstacle');
-      expect(checkCollision(2, 3, gridSize, obstacles)).toBe('obstacle');
+    it.each(collisionCases)('$name で $expected を返すこと', ({ x, y, expected }) => {
+      expect(checkCollision(x, y, gridSize, obstacles)).toBe(expected);
     });
   });
 });

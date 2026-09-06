@@ -3,94 +3,60 @@ import { stepHomura, checkGoalReached } from '../../src/domain/goal.js';
 
 describe('goal domain logic', () => {
   describe('stepHomura', () => {
-    it('左進行時、通常はx座標が-1されること', () => {
-      const result = stepHomura(3, -1, 5);
-      expect(result).toEqual({ homuraX: 2, homuraDir: -1 });
-    });
+    const cases = [
+      { name: '左進行の通常移動 (3 -> 2)', currentX: 3, dir: -1, expected: { homuraX: 2, homuraDir: -1 } },
+      { name: '左端到達で反転 (1 -> 0, dir: 1)', currentX: 1, dir: -1, expected: { homuraX: 0, homuraDir: 1 } },
+      { name: '左端から進行時 (0 -> 0, dir: 1)', currentX: 0, dir: -1, expected: { homuraX: 0, homuraDir: 1 } },
+      { name: '右端到達で反転 (3 -> 4, dir: -1)', currentX: 3, dir: 1, expected: { homuraX: 4, homuraDir: -1 } },
+      { name: '右端から進行時 (4 -> 4, dir: -1)', currentX: 4, dir: 1, expected: { homuraX: 4, homuraDir: -1 } }
+    ];
 
-    it('左端(0)に到達すると0で留まり、向きが右(1)に反転すること', () => {
-      const result = stepHomura(1, -1, 5);
-      expect(result).toEqual({ homuraX: 0, homuraDir: 1 });
-
-      const fromZero = stepHomura(0, -1, 5);
-      expect(fromZero).toEqual({ homuraX: 0, homuraDir: 1 });
-    });
-
-    it('右端(gridSize - 1)に到達すると端で留まり、向きが左(-1)に反転すること', () => {
-      const result = stepHomura(3, 1, 5);
-      expect(result).toEqual({ homuraX: 4, homuraDir: -1 });
-
-      const fromMax = stepHomura(4, 1, 5);
-      expect(fromMax).toEqual({ homuraX: 4, homuraDir: -1 });
+    it.each(cases)('$name', ({ currentX, dir, expected }) => {
+      expect(stepHomura(currentX, dir, 5)).toEqual(expected);
     });
   });
 
   describe('checkGoalReached', () => {
     describe('chase mode', () => {
-      it('プレイヤーがホムラと同座標にいる場合はクリア成功となること', () => {
-        const result = checkGoalReached({
-          mode: 'chase',
-          x: 4,
-          y: 4,
-          homuraX: 4,
-          homuraY: 4
-        });
-        expect(result).toEqual({ isAtGoal: true, isSuccess: true, reason: 'success' });
-      });
+      const chaseCases = [
+        {
+          name: 'ホムラと同座標にいる場合はクリア成功',
+          params: { mode: 'chase', x: 4, y: 4, homuraX: 4, homuraY: 4 },
+          expected: { isAtGoal: true, isSuccess: true, reason: 'success' }
+        },
+        {
+          name: '異なる座標にいる場合はゴール未到達',
+          params: { mode: 'chase', x: 3, y: 4, homuraX: 4, homuraY: 4 },
+          expected: { isAtGoal: false, isSuccess: false }
+        }
+      ];
 
-      it('プレイヤーがホムラと異なる座標にいる場合はゴール未到達となること', () => {
-        const result = checkGoalReached({
-          mode: 'chase',
-          x: 3,
-          y: 4,
-          homuraX: 4,
-          homuraY: 4
-        });
-        expect(result).toEqual({ isAtGoal: false, isSuccess: false });
+      it.each(chaseCases)('$name', ({ params, expected }) => {
+        expect(checkGoalReached(params)).toEqual(expected);
       });
     });
 
     describe('toy mode', () => {
-      it('おもちゃが全回収済みでゴール(4, 4)に到達した場合はクリア成功となること', () => {
-        const result = checkGoalReached({
-          mode: 'toy',
-          x: 4,
-          y: 4,
-          goalX: 4,
-          goalY: 4,
-          collectedToysCount: 2,
-          targetToysCount: 2,
-          hasTrap: false
-        });
-        expect(result).toEqual({ isAtGoal: true, isSuccess: true, reason: 'success' });
-      });
+      const toyCases = [
+        {
+          name: 'おもちゃ全回収でゴール到達時はクリア成功',
+          params: { mode: 'toy', x: 4, y: 4, goalX: 4, goalY: 4, collectedToysCount: 2, targetToysCount: 2, hasTrap: false },
+          expected: { isAtGoal: true, isSuccess: true, reason: 'success' }
+        },
+        {
+          name: 'おもちゃ不足時はゴール到達でも missing_toys 失敗',
+          params: { mode: 'toy', x: 4, y: 4, goalX: 4, goalY: 4, collectedToysCount: 1, targetToysCount: 2, hasTrap: false },
+          expected: { isAtGoal: true, isSuccess: false, reason: 'missing_toys' }
+        },
+        {
+          name: '罠を拾っている場合は trap 失敗',
+          params: { mode: 'toy', x: 4, y: 4, goalX: 4, goalY: 4, collectedToysCount: 2, targetToysCount: 2, hasTrap: true },
+          expected: { isAtGoal: true, isSuccess: false, reason: 'trap' }
+        }
+      ];
 
-      it('おもちゃが不足している場合はゴール到達でもクリア失敗(missing_toys)となること', () => {
-        const result = checkGoalReached({
-          mode: 'toy',
-          x: 4,
-          y: 4,
-          goalX: 4,
-          goalY: 4,
-          collectedToysCount: 1,
-          targetToysCount: 2,
-          hasTrap: false
-        });
-        expect(result).toEqual({ isAtGoal: true, isSuccess: false, reason: 'missing_toys' });
-      });
-
-      it('トイレットペーパー罠を拾っている場合はクリア失敗(trap)となること', () => {
-        const result = checkGoalReached({
-          mode: 'toy',
-          x: 4,
-          y: 4,
-          goalX: 4,
-          goalY: 4,
-          collectedToysCount: 2,
-          targetToysCount: 2,
-          hasTrap: true
-        });
-        expect(result).toEqual({ isAtGoal: true, isSuccess: false, reason: 'trap' });
+      it.each(toyCases)('$name', ({ params, expected }) => {
+        expect(checkGoalReached(params)).toEqual(expected);
       });
     });
   });
